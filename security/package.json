@@ -1,0 +1,23 @@
+{
+  "name": "ip-ingenuity-security",
+  "version": "1.0.0",
+  "description": "Security layer for IP Ingenuity platform",
+  "main": "secure-server.js",
+  "scripts": {
+    "start": "node secure-server.js",
+    "dev": "nodemon secure-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "validator": "^13.11.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
