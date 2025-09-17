@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python app.py"
+healthcheckPath = "/api/user"
+healthcheckTimeout = 100
+
+[env]
+PORT = "5000"
