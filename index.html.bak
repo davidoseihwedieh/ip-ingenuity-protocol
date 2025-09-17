@@ -298,7 +298,7 @@
             <div class="logo">IP Ingenuity Protocol</div>
             <ul class="nav-links">
                 <li><a href="#overview">Overview</a></li>
-                <li><a href="validation-results.html">Validation</a></li>
+                <li><a href="#validation">Validation</a></li>
                 <li><a href="#components">Components</a></li>
                 <li><a href="#data">Data Sources</a></li>
             </ul>
