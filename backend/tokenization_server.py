@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from web3 import Web3
+# from web3 import Web3  # Commented out for demo
 import json
 import sqlite3
 import hashlib
@@ -11,8 +11,8 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Web3 setup (using Ganache for local testing)
-w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+# Web3 setup (commented out for demo)
+# w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 
 # Contract ABI and address (will be set after deployment)
 CONTRACT_ABI = []  # Will be loaded from compiled contract

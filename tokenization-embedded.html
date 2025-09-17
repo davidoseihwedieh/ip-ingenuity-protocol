@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Tokenization Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #fff; }
+        .container { max-width: 100%; padding: 20px; }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #333; }
+        .tab { padding: 12px 25px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; font-size: 0.9rem; }
+        .tab.active { border-bottom-color: #00d4ff; background: rgba(0, 212, 255, 0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: linear-gradient(135deg, #1a1a1a, #2a2a2a); border-radius: 12px; padding: 25px; margin-bottom: 20px; border: 1px solid #333; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #00d4ff; font-size: 0.9rem; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 6px; background: #1a1a1a; color: #fff; font-size: 0.9rem; }
+        .btn { background: linear-gradient(135deg, #00d4ff, #0099cc); color: white; padding: 10px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; font-size: 0.9rem; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3); }
+        .milestone { background: #2a2a2a; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #00d4ff; font-size: 0.9rem; }
+        .milestone.completed { border-left-color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+        .token-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #333; }
+        .stat-value { font-size: 1.5em; font-weight: bold; color: #00d4ff; }
+        .progress-bar { background: #333; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { background: linear-gradient(90deg, #00d4ff, #0099cc); height: 100%; transition: width 0.3s; }
+        .asset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .asset-card { background: #1a1a1a; border-radius: 8px; padding: 15px; border: 1px solid #333; transition: transform 0.3s; }
+        .asset-card:hover { transform: translateY(-3px); border-color: #00d4ff; }
+        .wallet-connect { text-align: center; margin-bottom: 20px; }
+        .connected { background: #00ff88; color: #000; }
+        .notification { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #00d4ff; color: #000; padding: 10px 20px; border-radius: 6px; z-index: 1001; display: none; font-size: 0.9rem; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .two-column { grid-template-columns: 1fr; } .tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+
+    <div class="container">
+        <div class="wallet-connect">
+            <button id="connectWallet" class="btn">Connect Wallet (Demo)</button>
+            <div id="walletAddress" style="display: none; margin-top: 8px; font-size: 0.8em;"></div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('create')">Create Tokens</div>
+            <div class="tab" onclick="showTab('manage')">Manage</div>
+            <div class="tab" onclick="showTab('marketplace')">Marketplace</div>
+            <div class="tab" onclick="showTab('portfolio')">Portfolio</div>
+        </div>
+
+        <!-- Create Tokens Tab -->
+        <div id="create" class="tab-content active">
+            <div class="two-column">
+                <div class="card">
+                    <h3>Tokenize Your IP Asset</h3>
+                    <form id="tokenizeForm">
+                        <div class="form-group">
+                            <label>IP Asset Name</label>
+                            <input type="text" id="assetName" placeholder="AI Patent Valuation System" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="assetDescription" rows="2" placeholder="Describe your IP asset..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Total Token Supply</label>
+                            <input type="number" id="totalSupply" placeholder="1000000" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Token Price (ETH)</label>
+                            <input type="number" step="0.001" id="tokenPrice" placeholder="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Funding Target (ETH)</label>
+                            <input type="number" step="0.1" id="fundingTarget" placeholder="100" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Royalty %</label>
+                            <select id="royaltyPercent" required>
+                                <option value="10">10%</option>
+                                <option value="15">15%</option>
+                                <option value="20">20%</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Duration (Days)</label>
+                            <input type="number" id="duration" placeholder="30" required>
+                        </div>
+                        
+                        <button type="submit" class="btn" style="width: 100%;">Create Campaign</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Add Milestones</h3>
+                    <div class="form-group">
+                        <label>Milestone Title</label>
+                        <input type="text" id="milestoneTitle" placeholder="Prototype Development">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Funding Required (ETH)</label>
+                        <input type="number" step="0.1" id="milestoneFunding" placeholder="25">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Completion (Days)</label>
+                        <input type="number" id="milestoneDeadline" placeholder="90">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="milestoneDescription" rows="2" placeholder="Deliverable description..."></textarea>
+                    </div>
+                    
+                    <button onclick="addMilestone()" class="btn" style="width: 100%;">Add Milestone</button>
+                    
+                    <div id="milestonesList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Tab -->
+        <div id="manage" class="tab-content">
+            <div class="token-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="tokensIssued">0</div>
+                    <div>Tokens Issued</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="fundsRaised">0 ETH</div>
+                    <div>Funds Raised</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="investors">0</div>
+                    <div>Investors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="daysLeft">30</div>
+                    <div>Days Left</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Campaign Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="fundingProgress" style="width: 0%"></div>
+                </div>
+                <p id="progressText" style="margin-top: 10px;">0 ETH of 0 ETH target (0%)</p>
+            </div>
+
+            <div class="two-column">
+                <div class="card">
+                    <h3>Active Milestones</h3>
+                    <div id="activeMilestones">
+                        <p>Create your first campaign to see milestones</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Activity</h3>
+                    <div id="recentActivity">
+                        <p>No activity yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marketplace Tab -->
+        <div id="marketplace" class="tab-content">
+            <div class="card">
+                <h3>Available IP Tokens</h3>
+                <div class="asset-grid" id="marketplaceListings">
+                    <div class="asset-card">
+                        <h4>AI Patent Valuation System</h4>
+                        <p>Token Price: 0.01 ETH | Available: 500,000</p>
+                        <p style="font-size: 0.8rem; color: #ccc;">87.5% patent validation success</p>
+                        <div class="progress-bar" style="margin: 10px 0;">
+                            <div class="progress-fill" style="width: 35%"></div>
+                        </div>
+                        <button class="btn" style="width: 100%; margin-top: 10px;" onclick="investDemo()">Invest Now</button>
+                    </div>
+                    
+                    <div class="asset-card">
+                        <h4>Cross-Chain Bridge Protocol</h4>
+                        <p>Token Price: 0.02 ETH | Available: 250,000</p>
+                        <p style="font-size: 0.8rem; color: #ccc;">47.6% gas reduction validated</p>
+                        <div class="progress-bar" style="margin: 10px 0;">
+                            <div class="progress-fill" style="width: 68%"></div>
+                        </div>
+                        <button class="btn" style="width: 100%; margin-top: 10px;" onclick="investDemo()">Invest Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Tab -->
+        <div id="portfolio" class="tab-content">
+            <div class="two-column">
+                <div class="card">
+                    <h3>My Created Assets</h3>
+                    <div id="createdAssets">
+                        <p>No assets created yet</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>My Investments</h3>
+                    <div id="myInvestments">
+                        <p>No investments yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let milestones = [];
+        let currentWallet = null;
+        let campaignData = {};
+
+        // Auto-connect demo wallet
+        setTimeout(() => {
+            currentWallet = '0x1234567890123456789012345678901234567890';
+            document.getElementById('connectWallet').textContent = 'Connected (Demo)';
+            document.getElementById('connectWallet').classList.add('connected');
+            document.getElementById('walletAddress').style.display = 'block';
+            document.getElementById('walletAddress').textContent = `${currentWallet.substring(0, 6)}...${currentWallet.substring(38)}`;
+        }, 1000);
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => notification.style.display = 'none', 3000);
+        }
+
+        function addMilestone() {
+            const title = document.getElementById('milestoneTitle').value;
+            const funding = document.getElementById('milestoneFunding').value;
+            const deadline = document.getElementById('milestoneDeadline').value;
+            const description = document.getElementById('milestoneDescription').value;
+
+            if (title && funding && deadline && description) {
+                milestones.push({ title, funding, deadline, description });
+                updateMilestonesList();
+                clearMilestoneForm();
+                showNotification('Milestone added!');
+            }
+        }
+
+        function updateMilestonesList() {
+            const list = document.getElementById('milestonesList');
+            list.innerHTML = milestones.map((milestone, index) => `
+                <div class="milestone">
+                    <h4 style="font-size: 0.9rem;">${milestone.title}</h4>
+                    <p style="font-size: 0.8rem;">Funding: ${milestone.funding} ETH | ${milestone.deadline} days</p>
+                    <p style="font-size: 0.8rem; color: #ccc;">${milestone.description}</p>
+                    <button onclick="removeMilestone(${index})" style="background: #ff4444; padding: 4px 8px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.7rem; margin-top: 5px;">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function clearMilestoneForm() {
+            document.getElementById('milestoneTitle').value = '';
+            document.getElementById('milestoneFunding').value = '';
+            document.getElementById('milestoneDeadline').value = '';
+            document.getElementById('milestoneDescription').value = '';
+        }
+
+        function removeMilestone(index) {
+            milestones.splice(index, 1);
+            updateMilestonesList();
+        }
+
+        document.getElementById('tokenizeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            campaignData = {
+                name: document.getElementById('assetName').value,
+                totalSupply: parseInt(document.getElementById('totalSupply').value),
+                tokenPrice: parseFloat(document.getElementById('tokenPrice').value),
+                fundingTarget: parseFloat(document.getElementById('fundingTarget').value),
+                milestones: milestones,
+                fundsRaised: 0,
+                tokensIssued: 0,
+                investors: 0
+            };
+
+            showNotification('🎉 Token campaign created successfully!');
+            
+            // Update manage tab
+            updateCampaignStats();
+            showTab('manage');
+            document.querySelector('.tab[onclick="showTab(\'manage\')"]').classList.add('active');
+            
+            // Reset form
+            document.getElementById('tokenizeForm').reset();
+            milestones = [];
+            updateMilestonesList();
+        });
+
+        function updateCampaignStats() {
+            if (!campaignData.totalSupply) return;
+
+            document.getElementById('tokensIssued').textContent = campaignData.tokensIssued.toLocaleString();
+            document.getElementById('fundsRaised').textContent = campaignData.fundsRaised + ' ETH';
+            document.getElementById('investors').textContent = campaignData.investors;
+            
+            const progress = (campaignData.fundsRaised / campaignData.fundingTarget) * 100;
+            document.getElementById('fundingProgress').style.width = progress + '%';
+            document.getElementById('progressText').textContent = 
+                `${campaignData.fundsRaised} ETH of ${campaignData.fundingTarget} ETH target (${progress.toFixed(1)}%)`;
+
+            // Update milestones
+            const activeMilestonesDiv = document.getElementById('activeMilestones');
+            if (milestones.length > 0) {
+                activeMilestonesDiv.innerHTML = milestones.map(milestone => `
+                    <div class="milestone">
+                        <h4 style="font-size: 0.9rem;">${milestone.title}</h4>
+                        <p style="font-size: 0.8rem;">Required: ${milestone.funding} ETH | ${milestone.deadline} days</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${Math.min((campaignData.fundsRaised / milestone.funding) * 100, 100)}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Update created assets
+            document.getElementById('createdAssets').innerHTML = `
+                <div class="milestone">
+                    <h4 style="font-size: 0.9rem;">${campaignData.name}</h4>
+                    <p style="font-size: 0.8rem;">Raised: ${campaignData.fundsRaised} ETH / ${campaignData.fundingTarget} ETH</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function investDemo() {
+            const amount = prompt('How many tokens would you like to purchase?');
+            if (amount && !isNaN(amount) && amount > 0) {
+                showNotification(`🎉 Investment successful! Purchased ${amount} tokens`);
+                
+                // Update portfolio
+                document.getElementById('myInvestments').innerHTML = `
+                    <div class="milestone">
+                        <h4 style="font-size: 0.9rem;">AI Patent Valuation System</h4>
+                        <p style="font-size: 0.8rem;">Tokens: ${amount} | Value: ${(amount * 0.01).toFixed(3)} ETH</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Simulate some demo activity
+        setTimeout(() => {
+            if (campaignData.totalSupply) {
+                campaignData.fundsRaised = 15.5;
+                campaignData.tokensIssued = 1550;
+                campaignData.investors = 23;
+                updateCampaignStats();
+                
+                document.getElementById('recentActivity').innerHTML = `
+                    <div style="padding: 8px; border-bottom: 1px solid #333; font-size: 0.8rem;">
+                        <strong>0x1234...5678</strong> invested 5 ETH<br>
+                        <small>2 hours ago</small>
+                    </div>
+                    <div style="padding: 8px; border-bottom: 1px solid #333; font-size: 0.8rem;">
+                        <strong>0x9abc...def0</strong> invested 3.2 ETH<br>
+                        <small>5 hours ago</small>
+                    </div>
+                `;
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
