@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Tokenization Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .tabs { display: flex; margin-bottom: 30px; border-bottom: 2px solid #333; }
+        .tab { padding: 15px 30px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; }
+        .tab.active { border-bottom-color: #00d4ff; background: rgba(0, 212, 255, 0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: linear-gradient(135deg, #1a1a1a, #2a2a2a); border-radius: 15px; padding: 30px; margin-bottom: 30px; border: 1px solid #333; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #00d4ff; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 8px; background: #1a1a1a; color: #fff; }
+        .btn { background: linear-gradient(135deg, #00d4ff, #0099cc); color: white; padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3); }
+        .milestone { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #00d4ff; }
+        .token-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: #1a1a1a; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #333; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #00d4ff; }
+        .progress-bar { background: #333; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { background: linear-gradient(90deg, #00d4ff, #0099cc); height: 100%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>IP Tokenization Platform</h1>
+            <p>Transform your intellectual property into tradeable tokens</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('create')">Create Tokens</div>
+            <div class="tab" onclick="showTab('manage')">Manage Campaign</div>
+            <div class="tab" onclick="showTab('marketplace')">Marketplace</div>
+        </div>
+
+        <!-- Create Tokens Tab -->
+        <div id="create" class="tab-content active">
+            <div class="card">
+                <h2>Tokenize Your IP Asset</h2>
+                <form id="tokenizeForm">
+                    <div class="form-group">
+                        <label>IP Asset ID</label>
+                        <input type="text" id="assetId" placeholder="Enter your uploaded IP asset ID" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Total Token Supply</label>
+                        <input type="number" id="totalSupply" placeholder="e.g., 1000000" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Token Price (ETH)</label>
+                        <input type="number" step="0.001" id="tokenPrice" placeholder="e.g., 0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Funding Target (ETH)</label>
+                        <input type="number" step="0.1" id="fundingTarget" placeholder="e.g., 100" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Royalty Percentage</label>
+                        <select id="royaltyPercent" required>
+                            <option value="5">5%</option>
+                            <option value="10">10%</option>
+                            <option value="15">15%</option>
+                            <option value="20">20%</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Campaign Duration (Days)</label>
+                        <input type="number" id="duration" placeholder="e.g., 30" required>
+                    </div>
+                    
+                    <button type="submit" class="btn">Create Token Campaign</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Add Milestones & Deliverables</h3>
+                <div class="form-group">
+                    <label>Milestone Title</label>
+                    <input type="text" id="milestoneTitle" placeholder="e.g., Prototype Development">
+                </div>
+                
+                <div class="form-group">
+                    <label>Funding Required (ETH)</label>
+                    <input type="number" step="0.1" id="milestoneFunding" placeholder="e.g., 25">
+                </div>
+                
+                <div class="form-group">
+                    <label>Expected Completion (Days)</label>
+                    <input type="number" id="milestoneDeadline" placeholder="e.g., 90">
+                </div>
+                
+                <div class="form-group">
+                    <label>Deliverable Description</label>
+                    <textarea id="milestoneDescription" rows="3" placeholder="Describe what will be delivered..."></textarea>
+                </div>
+                
+                <button onclick="addMilestone()" class="btn">Add Milestone</button>
+                
+                <div id="milestonesList"></div>
+            </div>
+        </div>
+
+        <!-- Manage Campaign Tab -->
+        <div id="manage" class="tab-content">
+            <div class="token-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="tokensIssued">0</div>
+                    <div>Tokens Issued</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="fundsRaised">0 ETH</div>
+                    <div>Funds Raised</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="investors">0</div>
+                    <div>Investors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="daysLeft">--</div>
+                    <div>Days Left</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Campaign Progress</h3>
+                <div>Funding Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="fundingProgress" style="width: 0%"></div>
+                </div>
+                <p id="progressText">0 ETH of 0 ETH target (0%)</p>
+            </div>
+
+            <div class="card">
+                <h3>Active Milestones</h3>
+                <div id="activeMilestones"></div>
+            </div>
+
+            <div class="card">
+                <h3>Token Holders</h3>
+                <div id="tokenHolders">
+                    <p>No token holders yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marketplace Tab -->
+        <div id="marketplace" class="tab-content">
+            <div class="card">
+                <h2>Available IP Tokens</h2>
+                <div id="marketplaceListings">
+                    <div class="milestone">
+                        <h4>AI Patent Valuation System</h4>
+                        <p>Token Price: 0.01 ETH | Available: 500,000 tokens</p>
+                        <p>Validated patent with 87.5% claims success rate</p>
+                        <button class="btn">Invest Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let milestones = [];
+        let campaignData = {};
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function addMilestone() {
+            const title = document.getElementById('milestoneTitle').value;
+            const funding = document.getElementById('milestoneFunding').value;
+            const deadline = document.getElementById('milestoneDeadline').value;
+            const description = document.getElementById('milestoneDescription').value;
+
+            if (title && funding && deadline && description) {
+                const milestone = { title, funding, deadline, description, status: 'pending' };
+                milestones.push(milestone);
+                
+                updateMilestonesList();
+                clearMilestoneForm();
+            }
+        }
+
+        function updateMilestonesList() {
+            const list = document.getElementById('milestonesList');
+            list.innerHTML = milestones.map((milestone, index) => `
+                <div class="milestone">
+                    <h4>${milestone.title}</h4>
+                    <p><strong>Funding:</strong> ${milestone.funding} ETH</p>
+                    <p><strong>Deadline:</strong> ${milestone.deadline} days</p>
+                    <p><strong>Deliverable:</strong> ${milestone.description}</p>
+                    <button onclick="removeMilestone(${index})" style="background: #ff4444; padding: 5px 10px; border: none; border-radius: 4px; color: white; cursor: pointer;">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function clearMilestoneForm() {
+            document.getElementById('milestoneTitle').value = '';
+            document.getElementById('milestoneFunding').value = '';
+            document.getElementById('milestoneDeadline').value = '';
+            document.getElementById('milestoneDescription').value = '';
+        }
+
+        function removeMilestone(index) {
+            milestones.splice(index, 1);
+            updateMilestonesList();
+        }
+
+        document.getElementById('tokenizeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            campaignData = {
+                assetId: document.getElementById('assetId').value,
+                totalSupply: parseInt(document.getElementById('totalSupply').value),
+                tokenPrice: parseFloat(document.getElementById('tokenPrice').value),
+                fundingTarget: parseFloat(document.getElementById('fundingTarget').value),
+                royaltyPercent: parseInt(document.getElementById('royaltyPercent').value),
+                duration: parseInt(document.getElementById('duration').value),
+                milestones: milestones,
+                created: new Date(),
+                fundsRaised: 0,
+                tokensIssued: 0,
+                investors: 0
+            };
+
+            // Simulate blockchain deployment
+            alert('Token campaign created successfully! Contract deployed to blockchain.');
+            
+            // Update manage tab
+            updateCampaignStats();
+            showTab('manage');
+            document.querySelector('.tab[onclick="showTab(\'manage\')"]').classList.add('active');
+        });
+
+        function updateCampaignStats() {
+            if (!campaignData.totalSupply) return;
+
+            document.getElementById('tokensIssued').textContent = campaignData.tokensIssued.toLocaleString();
+            document.getElementById('fundsRaised').textContent = campaignData.fundsRaised + ' ETH';
+            document.getElementById('investors').textContent = campaignData.investors;
+            
+            const progress = (campaignData.fundsRaised / campaignData.fundingTarget) * 100;
+            document.getElementById('fundingProgress').style.width = progress + '%';
+            document.getElementById('progressText').textContent = 
+                `${campaignData.fundsRaised} ETH of ${campaignData.fundingTarget} ETH target (${progress.toFixed(1)}%)`;
+
+            // Update active milestones
+            const activeMilestonesDiv = document.getElementById('activeMilestones');
+            activeMilestonesDiv.innerHTML = milestones.map(milestone => `
+                <div class="milestone">
+                    <h4>${milestone.title}</h4>
+                    <p>Required: ${milestone.funding} ETH | Deadline: ${milestone.deadline} days</p>
+                    <p>${milestone.description}</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${Math.min((campaignData.fundsRaised / milestone.funding) * 100, 100)}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Simulate some activity for demo
+        setTimeout(() => {
+            if (campaignData.totalSupply) {
+                campaignData.fundsRaised = 15.5;
+                campaignData.tokensIssued = 1550;
+                campaignData.investors = 23;
+                updateCampaignStats();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
