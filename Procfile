@@ -1,1 +1,1 @@
-web: python ip-upload-backend.py
+web: python app.py
