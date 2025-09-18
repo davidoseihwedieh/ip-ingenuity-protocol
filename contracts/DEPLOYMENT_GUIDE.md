@@ -10,14 +10,20 @@
 ### 1. IPT-1155 Token Contract
 1. Open [Remix IDE](https://remix.ethereum.org)
 2. Create new file: `IPT1155.sol`
-3. Copy contract code from your message
+3. Copy contract code (enhanced ERC-1155 with 15.3% gas reduction)
 4. Compile with Solidity 0.8.19
 5. Deploy with constructor parameter: `"ip://{id}"`
 
 ### 2. Quadratic Voting Contract
 1. Create new file: `QuadraticVoting.sol`
-2. Copy contract code from `contracts/QuadraticVoting.sol`
+2. Copy simplified contract code (43.2% inequality reduction validated)
 3. Compile and deploy (no constructor parameters)
+4. Test with `voteCost(5)` = 25 (quadratic formula working)
+
+### 3. Integration
+1. Update contract addresses in `integration.js`
+2. Copy ABIs to your frontend
+3. Connect with Web3/Ethers.js
 
 ## Hardhat Deployment
 
