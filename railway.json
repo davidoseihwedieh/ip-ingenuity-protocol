@@ -4,8 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "cd server && python app.py",
-    "healthcheckPath": "/api/user",
-    "healthcheckTimeout": 100
+    "startCommand": "gunicorn production-app:app --bind 0.0.0.0:$PORT",
+    "healthcheckPath": "/health"
   }
 }
