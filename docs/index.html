@@ -4,263 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IP Ingenuity Protocol - Advanced IP Investment Platform</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
-        section { margin: 20px 0; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        form { display: flex; flex-direction: column; gap: 10px; }
-        input, select, button { padding: 10px; font-size: 16px; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #chat-container { border: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; margin: 10px 0; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        canvas { max-width: 100%; }
-        .status-validated { color: #28a745; font-weight: bold; }
-        .status-near-pass { color: #ffc107; font-weight: bold; }
-        .status-needs-work { color: #dc3545; font-weight: bold; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .hero { text-align: center; padding: 100px 20px; }
+        .hero h1 { font-size: 3rem; margin-bottom: 1rem; }
+        .hero p { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; }
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin: 3rem 0; }
+        .metric { background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 10px; text-align: center; }
+        .metric-value { font-size: 2.5rem; font-weight: bold; }
+        .buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .btn { background: white; color: #667eea; padding: 15px 30px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn.secondary { background: transparent; color: white; border: 2px solid white; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>IP Ingenuity Protocol - Advanced IP Investment Platform</h1>
-        <p>Complete ecosystem with AI analysis, reputation systems, and regulatory compliance. 87.5% Patent Claims Validated | 0.648 AI Correlation Score | 43.2% Inequality Reduction</p>
-    </header>
-
-    <section id="ip-analysis">
-        <h2>Advanced IP Analysis & Ranking System</h2>
-        <div id="ranking-output"></div>
-        <button onclick="generateRanking()">Generate IP Ranking</button>
-    </section>
-
-    <section id="ai-simulator">
-        <h2>AI Patent Valuation Simulator</h2>
-        <form id="valuation-form">
-            <label>Num Claims: <input type="number" id="num_claims" value="10"></label>
-            <label>Num Citations: <input type="number" id="num_citations" value="50"></label>
-            <label>Citation Density: <input type="number" id="citation_density" value="2.5" step="0.1"></label>
-            <label>Market Sentiment (-1 to 1): <input type="range" id="market_sentiment" min="-1" max="1" step="0.1" value="0"><span id="sentiment-value">0</span></label>
-            <label>Technical Complexity (0-2): <input type="number" id="technical_complexity" value="1.2" step="0.1" min="0" max="2"></label>
-            <label>Market Adoption (0-1): <input type="number" id="market_adoption" value="0.8" step="0.1" min="0" max="1"></label>
-            <button type="submit">Valuate Patent</button>
-        </form>
-        <div id="valuation-result"></div>
-        <div id="chat-container" style="display:none;">
-            <div id="chat-messages"></div>
-            <input type="text" id="chat-input" placeholder="Ask about valuation...">
-            <button onclick="sendChatMessage()">Send</button>
+    <div class="container">
+        <div class="hero">
+            <h1>IP Ingenuity Protocol</h1>
+            <p>Advanced IP Investment Platform with AI Analysis & Regulatory Compliance</p>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value">87.5%</div>
+                    <div>Patent Claims Validated</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">0.648</div>
+                    <div>AI Correlation</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">43.2%</div>
+                    <div>Inequality Reduction</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">15.3%</div>
+                    <div>Gas Reduction</div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <a href="comprehensive-website.html" class="btn">Full Platform</a>
+                <a href="simple-dashboard.html" class="btn">Simple Dashboard</a>
+                <a href="react-dashboard.html" class="btn">React Dashboard</a>
+                <a href="patent-validation-dashboard.html" class="btn secondary">Validation Results</a>
+            </div>
         </div>
-        <canvas id="mae-chart"></canvas>
-    </section>
-
-    <section id="tokenization">
-        <h2>IPT-1155 Tokenization</h2>
-        <form id="tokenize-form">
-            <label>Token ID: <input type="number" id="token-id" value="1"></label>
-            <label>Amount: <input type="number" id="amount" value="100"></label>
-            <label>Royalty % (0-50): <input type="number" id="royalty" value="10" min="0" max="50"></label>
-            <label>Content Hash: <input type="text" id="content-hash" placeholder="IPFS hash"></label>
-            <button type="submit">Mint Token</button>
-        </form>
-        <div id="token-result"></div>
-    </section>
-
-    <section id="governance">
-        <h2>Quadratic Governance: Quadratic Voting</h2>
-        <label>Proposal ID: <input type="number" id="proposal-id" value="1"></label>
-        <label>Votes: <input type="number" id="votes" value="5"></label>
-        <button onclick="castVote()">Cast Vote</button>
-        <div id="vote-result"></div>
-        <canvas id="gini-chart"></canvas>
-    </section>
-
-    <section id="validation-dashboard">
-        <h2>Patent Claims Validation Dashboard</h2>
-        <div id="claims-table"></div>
-        <canvas id="success-chart"></canvas>
-    </section>
-
-    <section id="anti-collusion">
-        <h2>Anti-Collusion Detection</h2>
-        <button onclick="checkCollusion()">Simulate Collusion Check</button>
-        <div id="collusion-result"></div>
-    </section>
-
-    <footer style="background: #333; color: white; padding: 2rem; text-align: center; margin-top: 2rem;">
-        <p>⚠️ Investments carry risk. Consult a financial advisor. Compliant with SEC Regulation CF.</p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">Patent Pending • 87.5% Claims Validated • Advanced IP Investment Platform</p>
-    </footer>
-
-    <script>
-        let web3;
-        let contract;
         
-        async function initWeb3() {
-            if (typeof window.ethereum !== 'undefined') {
-                web3 = new Web3(window.ethereum);
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const abi = [{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes32","name":"contentHash","type":"bytes32"},{"internalType":"uint256","name":"royaltyPercent","type":"uint256"}],"name":"mintWithMetadata","outputs":[],"stateMutability":"nonpayable","type":"function"}];
-                contract = new web3.eth.Contract(abi, '0x742d35Cc6634C0532925a3b8D0C9e3e0C8b4C8eB');
-            }
-        }
-        initWeb3();
-
-        // Update sentiment display
-        document.getElementById('market_sentiment').addEventListener('input', function() {
-            document.getElementById('sentiment-value').textContent = this.value;
-        });
-
-        function generateRanking() {
-            const tiers = ['Platinum (85-100)', 'Gold (70-84)', 'Silver (55-69)', 'Bronze (40-54)'];
-            const score = Math.random() * 100;
-            const tier = tiers[Math.floor(score / 25)];
-            document.getElementById('ranking-output').innerHTML = `<p>IP Score: ${score.toFixed(1)} - Tier: ${tier}</p>`;
-        }
-
-        document.getElementById('valuation-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const features = {
-                num_claims: parseInt(document.getElementById('num_claims').value),
-                num_citations: parseInt(document.getElementById('num_citations').value),
-                citation_density: parseFloat(document.getElementById('citation_density').value),
-                market_sentiment: parseFloat(document.getElementById('market_sentiment').value),
-                technical_complexity: parseFloat(document.getElementById('technical_complexity').value),
-                market_adoption: parseFloat(document.getElementById('market_adoption').value)
-            };
-            
-            try {
-                const response = await fetch('https://ip-ingenuity-backend.herokuapp.com/api/predict', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(features)
-                });
-                const data = await response.json();
-                document.getElementById('valuation-result').innerHTML = `<p>Predicted Value: $${data.prediction.toLocaleString()} | Correlation: ${data.correlation.toFixed(3)}</p>`;
-                document.getElementById('chat-container').style.display = 'block';
-                renderMAEChart();
-            } catch (err) {
-                // Fallback simulation
-                const prediction = 100000 + features.num_claims * 15000 + features.num_citations * 2500;
-                document.getElementById('valuation-result').innerHTML = `<p>Predicted Value: $${prediction.toLocaleString()} | Correlation: 0.648</p>`;
-                document.getElementById('chat-container').style.display = 'block';
-                renderMAEChart();
-            }
-        });
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const message = input.value;
-            document.getElementById('chat-messages').innerHTML += `<p><strong>You:</strong> ${message}</p>`;
-            
-            let response = 'I can help explain patent valuation factors.';
-            if (message.toLowerCase().includes('value')) response = 'Value estimated using ensemble ML models with 0.648 correlation.';
-            if (message.toLowerCase().includes('correlation')) response = 'The 0.648 correlation exceeds our 0.6 target, indicating high accuracy.';
-            
-            document.getElementById('chat-messages').innerHTML += `<p><strong>Bot:</strong> ${response}</p>`;
-            input.value = '';
-        }
-
-        function renderMAEChart() {
-            const ctx = document.getElementById('mae-chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Baseline', 'V1', 'V2', 'V3', 'V4'],
-                    datasets: [{ 
-                        label: 'MAE ($)', 
-                        data: [284567, 250000, 220000, 210234, 210234], 
-                        borderColor: '#007bff',
-                        tension: 0.4
-                    }]
-                },
-                options: { responsive: true }
-            });
-        }
-
-        document.getElementById('tokenize-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!contract) {
-                document.getElementById('token-result').innerHTML = '<p>Demo: Token minted successfully! Gas saved: 15.3%</p>';
-                return;
-            }
-            
-            try {
-                const accounts = await web3.eth.getAccounts();
-                const tx = await contract.methods.mintWithMetadata(
-                    parseInt(document.getElementById('token-id').value),
-                    parseInt(document.getElementById('amount').value),
-                    web3.utils.fromAscii(document.getElementById('content-hash').value || 'default'),
-                    parseInt(document.getElementById('royalty').value)
-                ).send({ from: accounts[0] });
-                document.getElementById('token-result').innerHTML = `<p>Transaction: ${tx.transactionHash}</p>`;
-            } catch (err) {
-                document.getElementById('token-result').innerHTML = '<p>Demo: Token minted successfully! Gas saved: 15.3%</p>';
-            }
-        });
-
-        function castVote() {
-            const proposalId = parseInt(document.getElementById('proposal-id').value);
-            const votes = parseInt(document.getElementById('votes').value);
-            const cost = votes * votes;
-            document.getElementById('vote-result').innerHTML = `<p>Vote cast for Proposal ${proposalId}. Quadratic cost: ${cost} tokens.</p>`;
-            renderGiniChart();
-        }
-
-        function renderGiniChart() {
-            const ctx = document.getElementById('gini-chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Traditional Voting', 'Quadratic Voting'],
-                    datasets: [{ 
-                        label: 'Gini Coefficient', 
-                        data: [0.742, 0.421], 
-                        backgroundColor: ['#dc3545', '#28a745'] 
-                    }]
-                },
-                options: { 
-                    responsive: true,
-                    scales: { y: { beginAtZero: true, max: 1 } }
-                }
-            });
-        }
-
-        const claimsData = [
-            { claim: 1, component: 'IPT-1155', status: 'VALIDATED', evidence: '15.3% gas reduction' },
-            { claim: 3, component: 'Cross-Chain', status: 'VALIDATED', evidence: '50.1% gas reduction' },
-            { claim: 5, component: 'Governance', status: 'VALIDATED', evidence: '43.2% inequality reduction' },
-            { claim: 36, component: 'AI Valuation', status: 'NEAR PASS', evidence: '-6.4% vs 15% target' },
-            { claim: 47, component: 'AI Valuation', status: 'NEAR PASS', evidence: '-0.1% vs 20% target' },
-            { claim: 48, component: 'AI Valuation', status: 'NEEDS WORK', evidence: '23.5% vs 78% target' }
-        ];
-
-        function renderDashboard() {
-            const table = document.getElementById('claims-table');
-            table.innerHTML = '<table><thead><tr><th>Claim</th><th>Component</th><th>Status</th><th>Evidence</th></tr></thead><tbody>' +
-                claimsData.map(c => `<tr><td>${c.claim}</td><td>${c.component}</td><td class="status-${c.status.toLowerCase().replace(' ', '-')}">${c.status}</td><td>${c.evidence}</td></tr>`).join('') +
-                '</tbody></table>';
-            
-            const ctx = document.getElementById('success-chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: { 
-                    labels: ['Validated (28)', 'Near Pass (3)', 'Needs Work (1)'], 
-                    datasets: [{ 
-                        data: [28, 3, 1],
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
-                    }] 
-                },
-                options: { responsive: true }
-            });
-        }
-        renderDashboard();
-
-        function checkCollusion() {
-            const risk = Math.random() > 0.7 ? 'High' : 'Low';
-            const action = risk === 'High' ? 'Account suspended for review' : 'Continue monitoring';
-            document.getElementById('collusion-result').innerHTML = `<p>Risk Level: ${risk} - Action: ${action}</p>`;
-        }
-    </script>
+        <footer style="text-align: center; padding: 20px; margin-top: 50px; opacity: 0.7;">
+            <p>Patent Pending • 87.5% Claims Validated • Advanced IP Investment Platform</p>
+        </footer>
+    </div>
 </body>
 </html>
