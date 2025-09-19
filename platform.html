@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provenance Protocol - Platform Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="platform.css">
+    <link rel="stylesheet" href="financial-components.css">
+    <link rel="stylesheet" href="ip-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>Provenance Protocol</h2>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#dashboard" class="nav-link active">Dashboard</a>
+                <a href="#search" class="nav-link">Search</a>
+                <a href="#trading" class="nav-link">Trading</a>
+                <a href="#risk" class="nav-link">Risk Assessment</a>
+                <a href="#analytics" class="nav-link">Market Analytics</a>
+                <a href="#valuation" class="nav-link">AI Valuation</a>
+                <a href="#portfolio" class="nav-link">Portfolio</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Platform Dashboard</h1>
+                <div class="user-info">
+                    <span class="user-name">Welcome, Investor</span>
+                    <div class="user-balance">$47,730 Portfolio Value</div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <h3>$47,730</h3>
+                        <p>Total Portfolio Value</p>
+                        <span class="stat-change positive">+12.3%</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <h3>13</h3>
+                        <p>IP Assets Owned</p>
+                        <span class="stat-change positive">+2</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <h3>$0.20</h3>
+                        <p>$PROVE Token Price</p>
+                        <span class="stat-change positive">+5.2%</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-info">
+                        <h3>15%</h3>
+                        <p>Staking APY</p>
+                        <span class="stat-change neutral">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Assets -->
+            <div class="featured-assets">
+                <h2>Featured IP Assets</h2>
+                <div class="assets-grid">
+                    <div class="asset-card premium">
+                        <div class="asset-badge">Featured</div>
+                        <div class="asset-image">
+                            <div class="asset-placeholder">🔐</div>
+                        </div>
+                        <div class="asset-content">
+                            <h3>AEGIS-Q Quantum Algorithm</h3>
+                            <p class="asset-creator">Dr. Sarah Chen</p>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Value</span>
+                                    <span class="metric-value">$47,730</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">ROI</span>
+                                    <span class="metric-value positive">+23.4%</span>
+                                </div>
+                            </div>
+                            <div class="asset-actions">
+                                <button class="btn btn-primary btn-sm">View Details</button>
+                                <button class="btn btn-secondary btn-sm">Trade</button>
+                                <button class="pro-btn pro-btn-success btn-sm" onclick="showPaymentModal({id: 'aegis-q', name: 'AEGIS-Q Quantum Algorithm', amount: 47730})">Invest</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="asset-card">
+                        <div class="asset-image">
+                            <div class="asset-placeholder">🧬</div>
+                        </div>
+                        <div class="asset-content">
+                            <h3>Gene Therapy Patent</h3>
+                            <p class="asset-creator">BioTech Labs</p>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Value</span>
+                                    <span class="metric-value">$125,000</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">ROI</span>
+                                    <span class="metric-value positive">+8.7%</span>
+                                </div>
+                            </div>
+                            <div class="asset-actions">
+                                <button class="btn btn-primary btn-sm">View Details</button>
+                                <button class="btn btn-secondary btn-sm">Trade</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="asset-card">
+                        <div class="asset-image">
+                            <div class="asset-placeholder">🤖</div>
+                        </div>
+                        <div class="asset-content">
+                            <h3>AI Training Algorithm</h3>
+                            <p class="asset-creator">Neural Networks Inc</p>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Value</span>
+                                    <span class="metric-value">$89,500</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">ROI</span>
+                                    <span class="metric-value negative">-2.1%</span>
+                                </div>
+                            </div>
+                            <div class="asset-actions">
+                                <button class="btn btn-primary btn-sm">View Details</button>
+                                <button class="btn btn-secondary btn-sm">Trade</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search & Discovery Section -->
+    <section id="search" class="search-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Search & Discovery</h2>
+                <p>Find and analyze IP assets with advanced search and filtering</p>
+            </div>
+
+            <div class="search-container">
+                <div class="search-filters">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Search patents, trademarks, copyrights...">
+                        <button class="search-btn">🔍</button>
+                    </div>
+
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label>IP Type</label>
+                            <select id="filterType">
+                                <option value="">All Types</option>
+                                <option value="patent">Patents</option>
+                                <option value="trademark">Trademarks</option>
+                                <option value="copyright">Copyrights</option>
+                                <option value="trade-secret">Trade Secrets</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Sector</label>
+                            <select id="filterSector">
+                                <option value="">All Sectors</option>
+                                <option value="ai-ml">AI/Machine Learning</option>
+                                <option value="biotech">Biotechnology</option>
+                                <option value="fintech">Financial Technology</option>
+                                <option value="quantum">Quantum Computing</option>
+                                <option value="renewable">Renewable Energy</option>
+                                <option value="automotive">Automotive</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Price Range</label>
+                            <select id="filterPrice">
+                                <option value="">Any Price</option>
+                                <option value="0-50000">$0 - $50K</option>
+                                <option value="50000-250000">$50K - $250K</option>
+                                <option value="250000-1000000">$250K - $1M</option>
+                                <option value="1000000+">$1M+</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="filterStatus">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="pending">Pending</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="sort-options">
+                        <label>Sort by:</label>
+                        <select id="sortBy">
+                            <option value="relevance">Relevance</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="date-new">Newest First</option>
+                            <option value="popularity">Most Popular</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="search-results">
+                    <div class="results-header">
+                        <span class="results-count">Showing <span id="resultsCount">247</span> results</span>
+                        <div class="view-toggle">
+                            <button class="view-btn active" data-view="grid">⊞</button>
+                            <button class="view-btn" data-view="list">☰</button>
+                        </div>
+                    </div>
+
+                    <div class="results-grid" id="searchResults">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+
+                    <div class="pagination">
+                        <button class="page-btn" disabled>← Previous</button>
+                        <span class="page-info">Page 1 of 25</span>
+                        <button class="page-btn">Next →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trading Interface Section -->
+    <section id="trading" class="trading-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Trading Interface</h2>
+                <p>Professional trading platform for IP assets</p>
+            </div>
+
+            <div class="trading-container">
+                <div class="trading-sidebar">
+                    <div class="asset-selector">
+                        <h3>Select Asset</h3>
+                        <div class="asset-search">
+                            <input type="text" placeholder="Search assets..." id="assetSearch">
+                        </div>
+                        <div class="asset-list">
+                            <div class="asset-item active" data-asset="AEGIS-Q">
+                                <div class="asset-info">
+                                    <span class="asset-name">AEGIS-Q</span>
+                                    <span class="asset-price">$47,730</span>
+                                </div>
+                                <span class="price-change positive">+2.3%</span>
+                            </div>
+                            <div class="asset-item" data-asset="GENE-THER">
+                                <div class="asset-info">
+                                    <span class="asset-name">Gene Therapy</span>
+                                    <span class="asset-price">$125,000</span>
+                                </div>
+                                <span class="price-change positive">+1.8%</span>
+                            </div>
+                            <div class="asset-item" data-asset="AI-TRAIN">
+                                <div class="asset-info">
+                                    <span class="asset-name">AI Training</span>
+                                    <span class="asset-price">$89,500</span>
+                                </div>
+                                <span class="price-change negative">-0.5%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="market-data">
+                        <h3>Market Data</h3>
+                        <div class="market-stats">
+                            <div class="stat">
+                                <span class="stat-label">24h Volume</span>
+                                <span class="stat-value">$2.4M</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Market Cap</span>
+                                <span class="stat-value">$47.3M</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Liquidity</span>
+                                <span class="stat-value">High</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trading-main">
+                    <div class="asset-header">
+                        <div class="asset-title">
+                            <h2 id="currentAssetName">AEGIS-Q Quantum Algorithm</h2>
+                            <span class="asset-symbol">AEGIS-Q</span>
+                        </div>
+                        <div class="asset-price-info">
+                            <span class="current-price" id="currentPrice">$47,730</span>
+                            <span class="price-change positive" id="priceChange">+$1,095 (+2.3%)</span>
+                        </div>
+                    </div>
+
+                    <div class="trading-chart">
+                        <div class="chart-header">
+                            <div class="timeframe-buttons">
+                                <button class="timeframe-btn active">1H</button>
+                                <button class="timeframe-btn">4H</button>
+                                <button class="timeframe-btn">1D</button>
+                                <button class="timeframe-btn">1W</button>
+                                <button class="timeframe-btn">1M</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="tradingChart" width="600" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="order-book">
+                        <div class="order-book-header">
+                            <h3>Order Book</h3>
+                            <span class="spread">Spread: $45 (0.09%)</span>
+                        </div>
+                        <div class="order-book-content">
+                            <div class="asks">
+                                <div class="book-header">Asks (Sell Orders)</div>
+                                <div class="order-row">
+                                    <span class="price ask">$47,775</span>
+                                    <span class="quantity">0.25</span>
+                                    <span class="total">$11,944</span>
+                                </div>
+                                <div class="order-row">
+                                    <span class="price ask">$47,750</span>
+                                    <span class="quantity">0.50</span>
+                                    <span class="total">$23,875</span>
+                                </div>
+                                <div class="order-row">
+                                    <span class="price ask">$47,735</span>
+                                    <span class="quantity">0.15</span>
+                                    <span class="total">$7,160</span>
+                                </div>
+                            </div>
+                            <div class="current-price-row">
+                                <span class="current-price-label">Current Price: $47,730</span>
+                            </div>
+                            <div class="bids">
+                                <div class="book-header">Bids (Buy Orders)</div>
+                                <div class="order-row">
+                                    <span class="price bid">$47,725</span>
+                                    <span class="quantity">0.30</span>
+                                    <span class="total">$14,318</span>
+                                </div>
+                                <div class="order-row">
+                                    <span class="price bid">$47,700</span>
+                                    <span class="quantity">0.75</span>
+                                    <span class="total">$35,775</span>
+                                </div>
+                                <div class="order-row">
+                                    <span class="price bid">$47,685</span>
+                                    <span class="quantity">0.20</span>
+                                    <span class="total">$9,537</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trading-panel">
+                    <div class="order-form">
+                        <div class="order-tabs">
+                            <button class="order-tab active" data-tab="buy">Buy</button>
+                            <button class="order-tab" data-tab="sell">Sell</button>
+                        </div>
+
+                        <div class="order-type-selector">
+                            <select id="orderType">
+                                <option value="market">Market Order</option>
+                                <option value="limit">Limit Order</option>
+                                <option value="stop">Stop Loss</option>
+                                <option value="take-profit">Take Profit</option>
+                            </select>
+                        </div>
+
+                        <div class="order-inputs">
+                            <div class="input-group">
+                                <label>Price (USD)</label>
+                                <input type="number" id="orderPrice" value="47730" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label>Quantity</label>
+                                <input type="number" id="orderQuantity" value="0.1" step="0.01" min="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label>Total</label>
+                                <input type="number" id="orderTotal" value="4773" readonly>
+                            </div>
+                        </div>
+
+                        <div class="order-summary">
+                            <div class="summary-row">
+                                <span>Available Balance:</span>
+                                <span>$25,430</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Trading Fee (0.25%):</span>
+                                <span id="tradingFee">$11.93</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total Cost:</span>
+                                <span id="totalCost">$4,784.93</span>
+                            </div>
+                        </div>
+
+                        <button class="order-submit-btn buy-btn" id="submitOrder">Place Buy Order</button>
+                    </div>
+
+                    <div class="position-info">
+                        <h3>Your Position</h3>
+                        <div class="position-details">
+                            <div class="position-row">
+                                <span>Holdings:</span>
+                                <span>0.25 shares</span>
+                            </div>
+                            <div class="position-row">
+                                <span>Avg. Cost:</span>
+                                <span>$46,500</span>
+                            </div>
+                            <div class="position-row">
+                                <span>Current Value:</span>
+                                <span>$11,932.50</span>
+                            </div>
+                            <div class="position-row profit">
+                                <span>P&L:</span>
+                                <span>+$1,307.50 (+12.3%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="recent-trades">
+                        <h3>Recent Trades</h3>
+                        <div class="trades-list">
+                            <div class="trade-row">
+                                <span class="trade-time">14:32</span>
+                                <span class="trade-price buy">$47,730</span>
+                                <span class="trade-quantity">0.05</span>
+                            </div>
+                            <div class="trade-row">
+                                <span class="trade-time">14:31</span>
+                                <span class="trade-price sell">$47,725</span>
+                                <span class="trade-quantity">0.12</span>
+                            </div>
+                            <div class="trade-row">
+                                <span class="trade-time">14:30</span>
+                                <span class="trade-price buy">$47,720</span>
+                                <span class="trade-quantity">0.08</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Risk Assessment Tool -->
+    <section id="risk" class="risk-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Risk Assessment Tool</h2>
+                <p>Comprehensive risk analysis for IP investments and portfolio management</p>
+            </div>
+
+            <div class="risk-container">
+                <div class="risk-sidebar">
+                    <div class="risk-categories">
+                        <h3>Risk Categories</h3>
+                        <div class="category-list">
+                            <div class="category-item active" data-category="portfolio">
+                                <span class="category-icon">📊</span>
+                                <span class="category-name">Portfolio Risk</span>
+                            </div>
+                            <div class="category-item" data-category="legal">
+                                <span class="category-icon">⚖️</span>
+                                <span class="category-name">Legal Risk</span>
+                            </div>
+                            <div class="category-item" data-category="market">
+                                <span class="category-icon">📈</span>
+                                <span class="category-name">Market Risk</span>
+                            </div>
+                            <div class="category-item" data-category="technical">
+                                <span class="category-icon">🔧</span>
+                                <span class="category-name">Technical Risk</span>
+                            </div>
+                            <div class="category-item" data-category="liquidity">
+                                <span class="category-icon">💧</span>
+                                <span class="category-name">Liquidity Risk</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-summary">
+                        <h3>Overall Risk Score</h3>
+                        <div class="risk-score-display">
+                            <div class="risk-score-circle">
+                                <span class="risk-score-value" id="overallRiskScore">7.2</span>
+                                <span class="risk-score-label">/ 10</span>
+                            </div>
+                            <div class="risk-level moderate" id="riskLevel">Moderate Risk</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="risk-main">
+                    <!-- Portfolio Risk Analysis -->
+                    <div class="risk-panel active" id="portfolio-panel">
+                        <div class="panel-header">
+                            <h3>Portfolio Risk Analysis</h3>
+                            <span class="risk-badge moderate">Moderate</span>
+                        </div>
+
+                        <div class="risk-metrics-grid">
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Concentration Risk</span>
+                                    <span class="metric-score high">8.1</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill high" style="width: 81%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    High exposure to quantum computing sector (45% of portfolio)
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Volatility Risk</span>
+                                    <span class="metric-score moderate">6.3</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 63%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Portfolio volatility within acceptable range for growth strategy
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Correlation Risk</span>
+                                    <span class="metric-score low">4.2</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill low" style="width: 42%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Good diversification across technology sectors
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Value at Risk (95%)</span>
+                                    <span class="metric-score moderate">7.1</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 71%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Maximum expected loss: $11,200 over 30 days
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="recommendations">
+                            <h4>Risk Mitigation Recommendations</h4>
+                            <ul class="recommendation-list">
+                                <li class="recommendation high">
+                                    <span class="rec-icon">⚠️</span>
+                                    <span class="rec-text">Reduce quantum computing exposure to below 30% of portfolio</span>
+                                </li>
+                                <li class="recommendation moderate">
+                                    <span class="rec-icon">💡</span>
+                                    <span class="rec-text">Consider adding defensive IP assets (healthcare, utilities)</span>
+                                </li>
+                                <li class="recommendation low">
+                                    <span class="rec-icon">✅</span>
+                                    <span class="rec-text">Current geographic diversification is optimal</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Legal Risk Analysis -->
+                    <div class="risk-panel" id="legal-panel">
+                        <div class="panel-header">
+                            <h3>Legal Risk Analysis</h3>
+                            <span class="risk-badge low">Low</span>
+                        </div>
+
+                        <div class="risk-metrics-grid">
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Patent Invalidation Risk</span>
+                                    <span class="metric-score low">3.8</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill low" style="width: 38%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Strong patent portfolio with thorough prior art analysis
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Litigation Risk</span>
+                                    <span class="metric-score moderate">5.9</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 59%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Moderate risk in competitive technology sectors
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Regulatory Compliance</span>
+                                    <span class="metric-score low">2.1</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill low" style="width: 21%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Excellent compliance across all jurisdictions
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">IP Expiration Risk</span>
+                                    <span class="metric-score low">4.5</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill low" style="width: 45%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Average remaining patent life: 14.2 years
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Risk Analysis -->
+                    <div class="risk-panel" id="market-panel">
+                        <div class="panel-header">
+                            <h3>Market Risk Analysis</h3>
+                            <span class="risk-badge high">High</span>
+                        </div>
+
+                        <div class="risk-metrics-grid">
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Technology Obsolescence</span>
+                                    <span class="metric-score high">8.7</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill high" style="width: 87%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Rapid innovation in quantum and AI sectors increases risk
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Market Adoption Risk</span>
+                                    <span class="metric-score moderate">6.8</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 68%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Uncertain timeline for mass market adoption
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Competitive Pressure</span>
+                                    <span class="metric-score high">7.9</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill high" style="width: 79%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    High competition from tech giants and startups
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Economic Sensitivity</span>
+                                    <span class="metric-score moderate">5.4</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 54%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Moderate correlation with economic cycles
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technical Risk Analysis -->
+                    <div class="risk-panel" id="technical-panel">
+                        <div class="panel-header">
+                            <h3>Technical Risk Analysis</h3>
+                            <span class="risk-badge moderate">Moderate</span>
+                        </div>
+
+                        <div class="risk-metrics-grid">
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Implementation Complexity</span>
+                                    <span class="metric-score high">7.6</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill high" style="width: 76%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Complex quantum algorithms require specialized expertise
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Scalability Risk</span>
+                                    <span class="metric-score moderate">6.1</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 61%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Moderate concerns about large-scale deployment
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Technical Validation</span>
+                                    <span class="metric-score low">3.2</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill low" style="width: 32%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Strong peer review and validation processes
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Dependency Risk</span>
+                                    <span class="metric-score moderate">5.8</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 58%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Some reliance on third-party technologies
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Liquidity Risk Analysis -->
+                    <div class="risk-panel" id="liquidity-panel">
+                        <div class="panel-header">
+                            <h3>Liquidity Risk Analysis</h3>
+                            <span class="risk-badge moderate">Moderate</span>
+                        </div>
+
+                        <div class="risk-metrics-grid">
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Market Depth</span>
+                                    <span class="metric-score moderate">6.4</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 64%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Limited but growing secondary market for IP assets
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Bid-Ask Spread</span>
+                                    <span class="metric-score high">7.3</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill high" style="width: 73%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Wide spreads due to specialized nature of assets
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Time to Exit</span>
+                                    <span class="metric-score moderate">5.9</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 59%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Average exit time: 45-90 days for quality assets
+                                </div>
+                            </div>
+
+                            <div class="risk-metric">
+                                <div class="metric-header">
+                                    <span class="metric-label">Price Impact</span>
+                                    <span class="metric-score moderate">6.7</span>
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill moderate" style="width: 67%"></div>
+                                </div>
+                                <div class="metric-description">
+                                    Moderate price impact for large transactions
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="risk-tools">
+                    <div class="stress-testing">
+                        <h3>Stress Testing</h3>
+                        <div class="stress-scenarios">
+                            <div class="scenario-item">
+                                <div class="scenario-header">
+                                    <span class="scenario-name">Market Crash (-30%)</span>
+                                    <span class="scenario-impact negative">-$14,319</span>
+                                </div>
+                                <div class="scenario-bar">
+                                    <div class="scenario-fill negative" style="width: 30%"></div>
+                                </div>
+                            </div>
+                            <div class="scenario-item">
+                                <div class="scenario-header">
+                                    <span class="scenario-name">Tech Sector Decline (-20%)</span>
+                                    <span class="scenario-impact negative">-$9,546</span>
+                                </div>
+                                <div class="scenario-bar">
+                                    <div class="scenario-fill negative" style="width: 20%"></div>
+                                </div>
+                            </div>
+                            <div class="scenario-item">
+                                <div class="scenario-header">
+                                    <span class="scenario-name">Quantum Breakthrough (+40%)</span>
+                                    <span class="scenario-impact positive">+$19,092</span>
+                                </div>
+                                <div class="scenario-bar">
+                                    <div class="scenario-fill positive" style="width: 40%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-alerts">
+                        <h3>Risk Alerts</h3>
+                        <div class="alert-list">
+                            <div class="alert-item high">
+                                <span class="alert-icon">🚨</span>
+                                <div class="alert-content">
+                                    <div class="alert-title">High Concentration Risk</div>
+                                    <div class="alert-description">Quantum sector exposure exceeds recommended 30% threshold</div>
+                                </div>
+                            </div>
+                            <div class="alert-item moderate">
+                                <span class="alert-icon">⚠️</span>
+                                <div class="alert-content">
+                                    <div class="alert-title">Patent Expiration Notice</div>
+                                    <div class="alert-description">2 patents expiring within 5 years - renewal required</div>
+                                </div>
+                            </div>
+                            <div class="alert-item low">
+                                <span class="alert-icon">ℹ️</span>
+                                <div class="alert-content">
+                                    <div class="alert-title">Market Volatility Update</div>
+                                    <div class="alert-description">IP market volatility increased 15% this quarter</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-calculator">
+                        <h3>Risk Calculator</h3>
+                        <div class="calculator-form">
+                            <div class="calc-input">
+                                <label>Investment Amount ($)</label>
+                                <input type="number" id="investmentAmount" value="10000" min="1000">
+                            </div>
+                            <div class="calc-input">
+                                <label>Time Horizon (years)</label>
+                                <input type="number" id="timeHorizon" value="5" min="1" max="20">
+                            </div>
+                            <div class="calc-input">
+                                <label>Risk Tolerance</label>
+                                <select id="riskTolerance">
+                                    <option value="conservative">Conservative</option>
+                                    <option value="moderate" selected>Moderate</option>
+                                    <option value="aggressive">Aggressive</option>
+                                </select>
+                            </div>
+                            <button class="calc-btn" id="calculateRisk">Calculate Risk Profile</button>
+                        </div>
+                        <div class="calc-results" id="calcResults">
+                            <div class="calc-result-item">
+                                <span class="calc-label">Recommended Allocation:</span>
+                                <span class="calc-value">65% Patents, 35% Other</span>
+                            </div>
+                            <div class="calc-result-item">
+                                <span class="calc-label">Expected Annual Return:</span>
+                                <span class="calc-value">12.4% - 18.7%</span>
+                            </div>
+                            <div class="calc-result-item">
+                                <span class="calc-label">Maximum Drawdown:</span>
+                                <span class="calc-value">-22.1%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Market Analytics Section -->
+    <section id="analytics" class="analytics-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Market Analytics</h2>
+                <p>Real-time market intelligence and data visualization for IP investments</p>
+            </div>
+
+            <div class="analytics-container">
+                <div class="analytics-sidebar">
+                    <div class="market-overview">
+                        <h3>Market Overview</h3>
+                        <div class="market-stats">
+                            <div class="market-stat">
+                                <span class="stat-label">Total Market Cap</span>
+                                <span class="stat-value">$2.47B</span>
+                                <span class="stat-change positive">+5.2%</span>
+                            </div>
+                            <div class="market-stat">
+                                <span class="stat-label">24h Volume</span>
+                                <span class="stat-value">$47.3M</span>
+                                <span class="stat-change positive">+12.8%</span>
+                            </div>
+                            <div class="market-stat">
+                                <span class="stat-label">Active Assets</span>
+                                <span class="stat-value">1,247</span>
+                                <span class="stat-change positive">+23</span>
+                            </div>
+                            <div class="market-stat">
+                                <span class="stat-label">Avg. Transaction</span>
+                                <span class="stat-value">$38K</span>
+                                <span class="stat-change negative">-2.1%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sector-performance">
+                        <h3>Sector Performance</h3>
+                        <div class="sector-list">
+                            <div class="sector-item">
+                                <div class="sector-info">
+                                    <span class="sector-name">Quantum Computing</span>
+                                    <span class="sector-change positive">+8.4%</span>
+                                </div>
+                                <div class="sector-bar">
+                                    <div class="sector-fill positive" style="width: 84%"></div>
+                                </div>
+                            </div>
+                            <div class="sector-item">
+                                <div class="sector-info">
+                                    <span class="sector-name">AI/Machine Learning</span>
+                                    <span class="sector-change positive">+6.7%</span>
+                                </div>
+                                <div class="sector-bar">
+                                    <div class="sector-fill positive" style="width: 67%"></div>
+                                </div>
+                            </div>
+                            <div class="sector-item">
+                                <div class="sector-info">
+                                    <span class="sector-name">Biotechnology</span>
+                                    <span class="sector-change positive">+3.2%</span>
+                                </div>
+                                <div class="sector-bar">
+                                    <div class="sector-fill positive" style="width: 32%"></div>
+                                </div>
+                            </div>
+                            <div class="sector-item">
+                                <div class="sector-info">
+                                    <span class="sector-name">Renewable Energy</span>
+                                    <span class="sector-change positive">+1.9%</span>
+                                </div>
+                                <div class="sector-bar">
+                                    <div class="sector-fill positive" style="width: 19%"></div>
+                                </div>
+                            </div>
+                            <div class="sector-item">
+                                <div class="sector-info">
+                                    <span class="sector-name">Automotive</span>
+                                    <span class="sector-change negative">-1.3%</span>
+                                </div>
+                                <div class="sector-bar">
+                                    <div class="sector-fill negative" style="width: 13%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="trending-assets">
+                        <h3>Trending Assets</h3>
+                        <div class="trending-list">
+                            <div class="trending-item">
+                                <div class="trending-rank">1</div>
+                                <div class="trending-info">
+                                    <span class="trending-name">AEGIS-Q</span>
+                                    <span class="trending-price">$47,730</span>
+                                </div>
+                                <span class="trending-change positive">+15.2%</span>
+                            </div>
+                            <div class="trending-item">
+                                <div class="trending-rank">2</div>
+                                <div class="trending-info">
+                                    <span class="trending-name">Neural-Net-X</span>
+                                    <span class="trending-price">$89,500</span>
+                                </div>
+                                <span class="trending-change positive">+12.8%</span>
+                            </div>
+                            <div class="trending-item">
+                                <div class="trending-rank">3</div>
+                                <div class="trending-info">
+                                    <span class="trending-name">Gene-Ther-1</span>
+                                    <span class="trending-price">$125,000</span>
+                                </div>
+                                <span class="trending-change positive">+9.4%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-main">
+                    <div class="chart-controls">
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" data-chart="market">Market Index</button>
+                            <button class="chart-tab" data-chart="volume">Volume</button>
+                            <button class="chart-tab" data-chart="sentiment">Sentiment</button>
+                            <button class="chart-tab" data-chart="correlation">Correlation</button>
+                        </div>
+                        <div class="timeframe-selector">
+                            <button class="timeframe-btn active" data-period="1D">1D</button>
+                            <button class="timeframe-btn" data-period="1W">1W</button>
+                            <button class="timeframe-btn" data-period="1M">1M</button>
+                            <button class="timeframe-btn" data-period="3M">3M</button>
+                            <button class="timeframe-btn" data-period="1Y">1Y</button>
+                        </div>
+                    </div>
+
+                    <div class="main-chart-container">
+                        <canvas id="mainAnalyticsChart" width="800" height="400"></canvas>
+                    </div>
+
+                    <div class="analytics-insights">
+                        <div class="insight-cards">
+                            <div class="insight-card">
+                                <div class="insight-icon">📈</div>
+                                <div class="insight-content">
+                                    <h4>Market Momentum</h4>
+                                    <p>Strong bullish momentum in quantum computing sector with 84% of assets showing positive returns</p>
+                                    <span class="insight-confidence">Confidence: 87%</span>
+                                </div>
+                            </div>
+                            <div class="insight-card">
+                                <div class="insight-icon">🎯</div>
+                                <div class="insight-content">
+                                    <h4>Investment Opportunity</h4>
+                                    <p>AI/ML patents showing undervaluation relative to market fundamentals - potential 15-20% upside</p>
+                                    <span class="insight-confidence">Confidence: 73%</span>
+                                </div>
+                            </div>
+                            <div class="insight-card">
+                                <div class="insight-icon">⚠️</div>
+                                <div class="insight-content">
+                                    <h4>Risk Alert</h4>
+                                    <p>Increased correlation between quantum and AI sectors may indicate concentration risk</p>
+                                    <span class="insight-confidence">Confidence: 91%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-tools">
+                    <div class="heatmap-container">
+                        <h3>Sector Heatmap</h3>
+                        <div class="heatmap-grid">
+                            <div class="heatmap-cell high-positive" data-sector="quantum">
+                                <span class="cell-label">Quantum</span>
+                                <span class="cell-value">+8.4%</span>
+                            </div>
+                            <div class="heatmap-cell medium-positive" data-sector="ai">
+                                <span class="cell-label">AI/ML</span>
+                                <span class="cell-value">+6.7%</span>
+                            </div>
+                            <div class="heatmap-cell low-positive" data-sector="biotech">
+                                <span class="cell-label">Biotech</span>
+                                <span class="cell-value">+3.2%</span>
+                            </div>
+                            <div class="heatmap-cell low-positive" data-sector="renewable">
+                                <span class="cell-label">Renewable</span>
+                                <span class="cell-value">+1.9%</span>
+                            </div>
+                            <div class="heatmap-cell negative" data-sector="automotive">
+                                <span class="cell-label">Automotive</span>
+                                <span class="cell-value">-1.3%</span>
+                            </div>
+                            <div class="heatmap-cell low-positive" data-sector="fintech">
+                                <span class="cell-label">FinTech</span>
+                                <span class="cell-value">+0.8%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="market-depth">
+                        <h3>Market Depth</h3>
+                        <div class="depth-chart">
+                            <div class="depth-side asks">
+                                <div class="depth-header">Asks</div>
+                                <div class="depth-levels">
+                                    <div class="depth-level">
+                                        <span class="depth-price">$48,500</span>
+                                        <span class="depth-size">12.5</span>
+                                    </div>
+                                    <div class="depth-level">
+                                        <span class="depth-price">$48,200</span>
+                                        <span class="depth-size">8.3</span>
+                                    </div>
+                                    <div class="depth-level">
+                                        <span class="depth-price">$47,900</span>
+                                        <span class="depth-size">15.7</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="depth-spread">
+                                <span class="spread-label">Spread</span>
+                                <span class="spread-value">$170 (0.36%)</span>
+                            </div>
+                            <div class="depth-side bids">
+                                <div class="depth-header">Bids</div>
+                                <div class="depth-levels">
+                                    <div class="depth-level">
+                                        <span class="depth-price">$47,730</span>
+                                        <span class="depth-size">9.2</span>
+                                    </div>
+                                    <div class="depth-level">
+                                        <span class="depth-price">$47,500</span>
+                                        <span class="depth-size">18.4</span>
+                                    </div>
+                                    <div class="depth-level">
+                                        <span class="depth-price">$47,200</span>
+                                        <span class="depth-size">22.1</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="news-feed">
+                        <h3>Market News</h3>
+                        <div class="news-list">
+                            <div class="news-item">
+                                <div class="news-time">2 min ago</div>
+                                <div class="news-content">
+                                    <h5>Quantum Computing Patent Surge</h5>
+                                    <p>New quantum algorithm patents filed by major tech companies drive sector rally</p>
+                                </div>
+                                <div class="news-impact positive">Bullish</div>
+                            </div>
+                            <div class="news-item">
+                                <div class="news-time">15 min ago</div>
+                                <div class="news-content">
+                                    <h5>AI Patent Licensing Deal</h5>
+                                    <p>$50M licensing agreement signed for machine learning IP portfolio</p>
+                                </div>
+                                <div class="news-impact positive">Bullish</div>
+                            </div>
+                            <div class="news-item">
+                                <div class="news-time">1 hour ago</div>
+                                <div class="news-content">
+                                    <h5>Regulatory Update</h5>
+                                    <p>New IP tokenization guidelines released by financial regulators</p>
+                                </div>
+                                <div class="news-impact neutral">Neutral</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced UI Components Section -->
+    <section id="ui-components" class="ui-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Enhanced UI Components</h2>
+                <p>Advanced interface elements and interactive components</p>
+            </div>
+
+            <div class="ui-showcase">
+                <!-- Advanced Notifications -->
+                <div class="ui-component">
+                    <h3>Smart Notifications</h3>
+                    <div class="notification-demo">
+                        <div class="notification success">
+                            <div class="notification-icon">✅</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Transaction Completed</div>
+                                <div class="notification-message">Successfully purchased 0.25 shares of AEGIS-Q for $11,932.50</div>
+                            </div>
+                            <button class="notification-close">×</button>
+                        </div>
+                        <div class="notification warning">
+                            <div class="notification-icon">⚠️</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Portfolio Alert</div>
+                                <div class="notification-message">Quantum sector exposure exceeds recommended 30% threshold</div>
+                            </div>
+                            <button class="notification-close">×</button>
+                        </div>
+                        <div class="notification info">
+                            <div class="notification-icon">ℹ️</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Market Update</div>
+                                <div class="notification-message">New AI patents available for investment - view opportunities</div>
+                            </div>
+                            <button class="notification-close">×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Forms -->
+                <div class="ui-component">
+                    <h3>Multi-Step Investment Form</h3>
+                    <div class="multistep-form">
+                        <div class="form-progress">
+                            <div class="progress-step active">
+                                <div class="step-number">1</div>
+                                <div class="step-label">Asset Selection</div>
+                            </div>
+                            <div class="progress-step">
+                                <div class="step-number">2</div>
+                                <div class="step-label">Investment Details</div>
+                            </div>
+                            <div class="progress-step">
+                                <div class="step-number">3</div>
+                                <div class="step-label">Risk Assessment</div>
+                            </div>
+                            <div class="progress-step">
+                                <div class="step-number">4</div>
+                                <div class="step-label">Confirmation</div>
+                            </div>
+                        </div>
+                        <div class="form-content">
+                            <div class="form-step active">
+                                <h4>Select IP Asset</h4>
+                                <div class="asset-selector-grid">
+                                    <div class="selectable-asset">
+                                        <input type="radio" name="asset" id="asset1" value="aegis-q">
+                                        <label for="asset1" class="asset-card-selectable">
+                                            <div class="asset-preview">🔐</div>
+                                            <div class="asset-details">
+                                                <h5>AEGIS-Q Algorithm</h5>
+                                                <p>$47,730</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="selectable-asset">
+                                        <input type="radio" name="asset" id="asset2" value="gene-therapy">
+                                        <label for="asset2" class="asset-card-selectable">
+                                            <div class="asset-preview">🧬</div>
+                                            <div class="asset-details">
+                                                <h5>Gene Therapy Patent</h5>
+                                                <p>$125,000</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-navigation">
+                            <button class="form-btn secondary" disabled>Previous</button>
+                            <button class="form-btn primary">Next Step</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Visualizations -->
+                <div class="ui-component">
+                    <h3>Interactive Data Visualizations</h3>
+                    <div class="visualization-grid">
+                        <div class="viz-item">
+                            <h4>Performance Gauge</h4>
+                            <div class="gauge-container">
+                                <canvas id="performanceGauge" width="200" height="200"></canvas>
+                                <div class="gauge-value">+23.4%</div>
+                            </div>
+                        </div>
+                        <div class="viz-item">
+                            <h4>Asset Distribution</h4>
+                            <div class="donut-container">
+                                <canvas id="assetDonut" width="200" height="200"></canvas>
+                                <div class="donut-legend">
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #3b82f6"></span>
+                                        <span>Patents 65%</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #10b981"></span>
+                                        <span>Trademarks 20%</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #f59e0b"></span>
+                                        <span>Copyrights 10%</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #ef4444"></span>
+                                        <span>Trade Secrets 5%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="viz-item">
+                            <h4>Market Trend</h4>
+                            <div class="sparkline-container">
+                                <canvas id="trendSparkline" width="300" height="100"></canvas>
+                                <div class="sparkline-stats">
+                                    <span class="trend-direction up">↗ Trending Up</span>
+                                    <span class="trend-change">+12.8% (7 days)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Modals -->
+                <div class="ui-component">
+                    <h3>Interactive Modals</h3>
+                    <div class="modal-triggers">
+                        <button class="demo-btn" data-modal="asset-details">Asset Details Modal</button>
+                        <button class="demo-btn" data-modal="transaction-confirm">Transaction Confirmation</button>
+                        <button class="demo-btn" data-modal="portfolio-analysis">Portfolio Analysis</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Templates -->
+    <div id="asset-details-modal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>AEGIS-Q Quantum Algorithm</h3>
+                <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="asset-detail-grid">
+                    <div class="detail-section">
+                        <h4>Overview</h4>
+                        <p>Revolutionary quantum-resistant cryptographic algorithm designed for secure communications in the post-quantum era.</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Key Metrics</h4>
+                        <div class="metrics-list">
+                            <div class="metric-row">
+                                <span>Current Value:</span>
+                                <span>$47,730</span>
+                            </div>
+                            <div class="metric-row">
+                                <span>24h Change:</span>
+                                <span class="positive">+15.2%</span>
+                            </div>
+                            <div class="metric-row">
+                                <span>Market Cap:</span>
+                                <span>$2.4M</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary">Add to Watchlist</button>
+                <button class="modal-btn primary">Invest Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Valuation Calculator -->
+    <section id="valuation" class="valuation-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>AI Valuation Calculator</h2>
+                <p>Get instant AI-powered valuations for your intellectual property</p>
+            </div>
+
+            <div class="valuation-container">
+                <div class="valuation-form">
+                    <h3>IP Asset Information</h3>
+                    <form id="valuationForm">
+                        <div class="form-group">
+                            <label>IP Type</label>
+                            <select id="ipType" required>
+                                <option value="">Select IP Type</option>
+                                <option value="patent">Patent</option>
+                                <option value="trademark">Trademark</option>
+                                <option value="copyright">Copyright</option>
+                                <option value="trade-secret">Trade Secret</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Technology Sector</label>
+                            <select id="sector" required>
+                                <option value="">Select Sector</option>
+                                <option value="ai-ml">AI/Machine Learning</option>
+                                <option value="biotech">Biotechnology</option>
+                                <option value="fintech">Financial Technology</option>
+                                <option value="quantum">Quantum Computing</option>
+                                <option value="renewable">Renewable Energy</option>
+                                <option value="automotive">Automotive</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Market Size (USD)</label>
+                            <select id="marketSize">
+                                <option value="small">< $1B</option>
+                                <option value="medium">$1B - $10B</option>
+                                <option value="large">$10B - $100B</option>
+                                <option value="massive">> $100B</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Development Stage</label>
+                            <select id="stage">
+                                <option value="concept">Concept/Idea</option>
+                                <option value="prototype">Prototype</option>
+                                <option value="testing">Testing Phase</option>
+                                <option value="commercial">Commercial Ready</option>
+                                <option value="market">In Market</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Patent Strength (1-10)</label>
+                            <input type="range" id="patentStrength" min="1" max="10" value="5">
+                            <span id="strengthValue">5</span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Calculate Valuation</button>
+                    </form>
+                </div>
+
+                <div class="valuation-results" id="valuationResults">
+                    <h3>AI Valuation Analysis</h3>
+                    <div class="results-placeholder">
+                        <div class="placeholder-icon">🤖</div>
+                        <p>Enter IP details to get AI-powered valuation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Portfolio Management</h2>
+                <p>Track and manage your IP investments</p>
+            </div>
+
+            <div class="portfolio-overview">
+                <div class="portfolio-chart">
+                    <h3>Portfolio Allocation</h3>
+                    <div class="chart-container">
+                        <canvas id="portfolioChart" width="300" height="300"></canvas>
+                    </div>
+                </div>
+
+                <div class="portfolio-performance">
+                    <h3>Performance Metrics</h3>
+                    <div class="performance-grid">
+                        <div class="performance-item">
+                            <span class="performance-label">Total Return</span>
+                            <span class="performance-value positive">+23.4%</span>
+                        </div>
+                        <div class="performance-item">
+                            <span class="performance-label">Sharpe Ratio</span>
+                            <span class="performance-value">1.87</span>
+                        </div>
+                        <div class="performance-item">
+                            <span class="performance-label">Max Drawdown</span>
+                            <span class="performance-value negative">-8.2%</span>
+                        </div>
+                        <div class="performance-item">
+                            <span class="performance-label">Alpha</span>
+                            <span class="performance-value positive">+5.3%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="api-config.js"></script>
+    <script src="script.js"></script>
+    <script src="platform.js"></script>
+    <script src="search-trading.js"></script>
+    <script src="risk-assessment.js"></script>
+    <script src="analytics-ui.js"></script>
+    <script src="market-data.js"></script>
+    <script src="patent-data.js"></script>
+    <script src="auth.js"></script>
+    <script src="web3.js"></script>
+    <script src="payments.js"></script>
+    <script src="ip-integration.js"></script>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity - Protect & Monetize Your Ideas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        
+        /* Header */
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .logo { font-size: 1.5rem; font-weight: 700; color: #0066cc; }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover { color: #0066cc; }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+            color: white;
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .cta-button {
+            background: white;
+            color: #0066cc;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        
+        .cta-button:hover { transform: translateY(-2px); }
+        
+        /* How It Works */
+        .how-it-works {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .step {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        
+        .step:hover {
+            border-color: #0066cc;
+            transform: translateY(-5px);
+        }
+        
+        .step-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .step h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .step p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        /* Tier System */
+        .tiers {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        
+        .tier-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .tier-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tier-card:hover {
+            border-color: #0066cc;
+            transform: translateY(-5px);
+        }
+        
+        .tier-card.premium {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+        }
+        
+        .tier-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0066cc;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .tier-badge.premium { background: #ffd700; color: #333; }
+        
+        .tier-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .tier-description {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tier-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+        
+        .tier-features li {
+            padding: 0.5rem 0;
+            color: #666;
+        }
+        
+        .tier-features li:before {
+            content: "✓";
+            color: #00b894;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .value-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0066cc;
+            margin: 1rem 0;
+        }
+        
+        .risk-score {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .risk-low { background: #d4edda; color: #155724; }
+        .risk-medium { background: #fff3cd; color: #856404; }
+        .risk-high { background: #f8d7da; color: #721c24; }
+        
+        /* Upload Section */
+        .upload-section {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .upload-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        
+        .file-upload {
+            border: 2px dashed #0066cc;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload:hover {
+            background: #f0f7ff;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: #0066cc;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #0052a3;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #333;
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .nav-links { display: none; }
+            .steps { grid-template-columns: 1fr; }
+            .tier-cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <div class="logo">IP Ingenuity</div>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#tiers">Pricing</a></li>
+                    <li><a href="#upload">Upload IP</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <h1>Protect & Monetize Your Ideas</h1>
+            <p>Upload your intellectual property, get instant valuation, and earn tokens. Simple, secure, and profitable.</p>
+            <a href="#upload" class="cta-button">Upload Your IP Now</a>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon">📤</div>
+                    <h3>1. Upload Your IP</h3>
+                    <p>Upload your invention, design, or creative work. We accept documents, images, and descriptions.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">🔍</div>
+                    <h3>2. Get Instant Analysis</h3>
+                    <p>Our AI analyzes your IP and provides value estimation and risk assessment based on your legal protection level.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">🪙</div>
+                    <h3>3. Earn Tokens</h3>
+                    <p>Receive tokens based on your IP's value. Trade tokens with others or exchange for payment.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tier System -->
+    <section id="tiers" class="tiers">
+        <div class="container">
+            <h2 class="section-title">Value & Risk Tiers</h2>
+            <div class="tier-cards">
+                <div class="tier-card">
+                    <div class="tier-badge">Basic</div>
+                    <h3 class="tier-title">Idea Stage</h3>
+                    <p class="tier-description">Early concept or unprotected idea</p>
+                    <div class="value-display">$500 - $5K</div>
+                    <div class="risk-score risk-high">High Risk</div>
+                    <ul class="tier-features">
+                        <li>Basic timestamp protection</li>
+                        <li>50 tokens earned</li>
+                        <li>Community feedback</li>
+                        <li>Development guidance</li>
+                    </ul>
+                </div>
+                
+                <div class="tier-card">
+                    <div class="tier-badge">Standard</div>
+                    <h3 class="tier-title">Patent Pending</h3>
+                    <p class="tier-description">Filed patent application with USPTO</p>
+                    <div class="value-display">$5K - $50K</div>
+                    <div class="risk-score risk-medium">Medium Risk</div>
+                    <ul class="tier-features">
+                        <li>Legal timestamp verification</li>
+                        <li>200 tokens earned</li>
+                        <li>Market analysis</li>
+                        <li>Licensing opportunities</li>
+                        <li>Investor matching</li>
+                    </ul>
+                </div>
+                
+                <div class="tier-card premium">
+                    <div class="tier-badge premium">Premium</div>
+                    <h3 class="tier-title">Patent Approved</h3>
+                    <p class="tier-description">Granted patent with full legal protection</p>
+                    <div class="value-display">$50K - $500K+</div>
+                    <div class="risk-score risk-low">Low Risk</div>
+                    <ul class="tier-features">
+                        <li>Full legal protection</li>
+                        <li>1000+ tokens earned</li>
+                        <li>Premium market access</li>
+                        <li>Revenue sharing</li>
+                        <li>Corporate partnerships</li>
+                        <li>Global licensing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload" class="upload-section">
+        <div class="container">
+            <h2 class="section-title">Upload Your IP</h2>
+            <form class="upload-form" id="ipUploadForm">
+                <div class="form-group">
+                    <label for="ipTitle">What's your invention or idea?</label>
+                    <input type="text" id="ipTitle" name="title" placeholder="e.g., Smart Home Security System" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="legalStatus">Legal Protection Level</label>
+                    <select id="legalStatus" name="legal_status" required>
+                        <option value="">Select your protection level</option>
+                        <option value="idea">Just an idea (no legal protection)</option>
+                        <option value="pending">Patent pending (filed application)</option>
+                        <option value="approved">Patent approved (granted patent)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Describe your IP in simple terms</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Explain what your invention does and why it's valuable..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Upload Files (Optional)</label>
+                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                        <p>📁 Click to upload documents, images, or diagrams</p>
+                        <input type="file" id="fileInput" name="file" style="display: none;" multiple>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="walletAddress">Your Wallet Address (for tokens)</label>
+                    <input type="text" id="walletAddress" name="wallet" placeholder="0x1234...abcd" required>
+                </div>
+                
+                <button type="submit" class="submit-btn">Get Valuation & Earn Tokens</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 IP Ingenuity. Protecting creators, empowering innovation.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple form handling
+        document.getElementById('ipUploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const legalStatus = document.getElementById('legalStatus').value;
+            const title = document.getElementById('ipTitle').value;
+            
+            // Simple tier calculation
+            let tier, value, risk, tokens;
+            
+            switch(legalStatus) {
+                case 'idea':
+                    tier = 'Basic';
+                    value = '$500 - $5,000';
+                    risk = 'High Risk';
+                    tokens = 50;
+                    break;
+                case 'pending':
+                    tier = 'Standard';
+                    value = '$5,000 - $50,000';
+                    risk = 'Medium Risk';
+                    tokens = 200;
+                    break;
+                case 'approved':
+                    tier = 'Premium';
+                    value = '$50,000 - $500,000+';
+                    risk = 'Low Risk';
+                    tokens = 1000;
+                    break;
+            }
+            
+            // Show results
+            alert(`🎉 IP Analysis Complete!
+
+Title: ${title}
+Tier: ${tier}
+Estimated Value: ${value}
+Risk Level: ${risk}
+Tokens Earned: ${tokens}
+
+Your IP has been securely timestamped and registered!`);
+        });
+        
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

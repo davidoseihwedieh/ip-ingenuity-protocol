@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity - Test Integration</title>
+    <link rel="stylesheet" href="ip-styles.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .test-button { margin: 10px; padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .test-button:hover { background: #0052a3; }
+    </style>
+</head>
+<body>
+    <h1>IP Ingenuity - Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>AI Valuation Test</h2>
+        <div class="ip-form-group">
+            <label>IP Title:</label>
+            <input type="text" id="ip-title" value="AI-Powered Blockchain Protocol" placeholder="Enter IP title">
+        </div>
+        <div class="ip-form-group">
+            <label>Description:</label>
+            <textarea id="ip-description" placeholder="Enter IP description">Revolutionary blockchain protocol using AI for automated consensus and smart contract optimization.</textarea>
+        </div>
+        <div class="ip-form-group">
+            <label>Claims:</label>
+            <textarea id="ip-claims" placeholder="Enter patent claims">A computer-implemented method for blockchain consensus using artificial intelligence algorithms.</textarea>
+        </div>
+        <button class="test-button" onclick="testValuation()">Test AI Valuation</button>
+        <button class="test-button" onclick="testMinting()">Test Token Minting</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Search Test</h2>
+        <div class="ip-form-group">
+            <label>Search Query:</label>
+            <input type="text" id="search-query" value="AI blockchain protocol" placeholder="Enter search terms">
+        </div>
+        <button class="test-button" onclick="testSearch()">Test Semantic Search</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Portfolio Test</h2>
+        <button class="test-button" onclick="testPortfolio()">Load Portfolio</button>
+    </div>
+
+    <div class="main-content">
+        <!-- Results will be displayed here -->
+    </div>
+
+    <script src="ip-integration.js"></script>
+    <script>
+        // Test functions
+        function testValuation() {
+            const title = document.getElementById('ip-title').value;
+            const description = document.getElementById('ip-description').value;
+            const claims = document.getElementById('ip-claims').value.split('\n').filter(c => c.trim());
+            
+            const ipData = {
+                title,
+                description,
+                claims,
+                industry: 'software',
+                technology_area: 'ai blockchain',
+                base_valuation: 1000000
+            };
+
+            console.log('Testing valuation with data:', ipData);
+            
+            // Mock API call since server might not be running
+            const mockResult = {
+                success: true,
+                valuation: 750000,
+                confidence: 82.5,
+                breakdown: {
+                    technical: 0.75,
+                    market: 0.85,
+                    financial: 0.68,
+                    weighted_score: 0.75
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            displayValuationResults(mockResult);
+        }
+
+        function testMinting() {
+            const mockResult = {
+                success: true,
+                token: {
+                    token_id: 'IPT_TEST_001',
+                    transaction_hash: '0x1234567890abcdef',
+                    block_number: 12345678,
+                    gas_used: 150000
+                }
+            };
+            
+            displayMintingResults(mockResult);
+        }
+
+        function testSearch() {
+            const query = document.getElementById('search-query').value;
+            
+            const mockResults = [
+                {
+                    asset_id: 'patent_001',
+                    similarity_score: 0.89,
+                    asset_type: 'patent',
+                    metadata: {
+                        title: 'AI-Powered Blockchain Consensus',
+                        creator: 'Tech Innovators Inc',
+                        creation_date: '2024-01-15'
+                    }
+                },
+                {
+                    asset_id: 'patent_002',
+                    similarity_score: 0.76,
+                    asset_type: 'patent',
+                    metadata: {
+                        title: 'Smart Contract Optimization Algorithm',
+                        creator: 'Blockchain Labs',
+                        creation_date: '2024-02-20'
+                    }
+                }
+            ];
+            
+            displaySearchResults(mockResults);
+        }
+
+        function testPortfolio() {
+            const mockPortfolio = {
+                total_assets: 3,
+                total_value: 1850000,
+                assets: [
+                    {
+                        token_id: 'IPT_001',
+                        title: 'AI Blockchain Protocol',
+                        valuation: 750000,
+                        confidence: 85,
+                        status: 'active'
+                    },
+                    {
+                        token_id: 'IPT_002',
+                        title: 'Quantum Encryption Method',
+                        valuation: 650000,
+                        confidence: 78,
+                        status: 'active'
+                    },
+                    {
+                        token_id: 'IPT_003',
+                        title: 'Neural Network Architecture',
+                        valuation: 450000,
+                        confidence: 72,
+                        status: 'pending'
+                    }
+                ]
+            };
+            
+            displayPortfolio(mockPortfolio);
+        }
+
+        // Initialize test page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('IP Ingenuity Test Page Loaded');
+            console.log('Available functions:', Object.keys(window.IPIngenuity || {}));
+        });
+    </script>
+</body>
+</html>

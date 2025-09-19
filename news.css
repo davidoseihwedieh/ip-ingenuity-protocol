@@ -1,0 +1,251 @@
+/* News Section Styles */
+.news-section {
+    padding: 60px 0;
+    background: #ffffff;
+}
+
+.news-section.alt {
+    background: #f8fafc;
+}
+
+.news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.news-header h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin: 0;
+}
+
+.view-all {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
+
+.view-all:hover {
+    color: #0052a3;
+}
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+}
+
+.news-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.news-card:hover {
+    border-color: #0066cc;
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.1);
+    transform: translateY(-2px);
+}
+
+.news-card.trending {
+    border-left: 4px solid #f59e0b;
+}
+
+.news-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.news-category {
+    background: #0066cc;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.news-time {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.trending-badge {
+    background: #f59e0b;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.news-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.news-summary {
+    color: #4a5568;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+    font-size: 0.95rem;
+}
+
+.news-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.news-source {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.read-more {
+    background: none;
+    border: 1px solid #0066cc;
+    color: #0066cc;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.read-more:hover {
+    background: #0066cc;
+    color: white;
+}
+
+/* Market Summary Bar */
+.market-summary {
+    background: #1a202c;
+    color: white;
+    padding: 12px 0;
+    font-size: 0.9rem;
+}
+
+.market-ticker {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ticker-symbol {
+    font-weight: 600;
+}
+
+.ticker-price {
+    color: #48bb78;
+}
+
+.ticker-change.negative {
+    color: #f56565;
+}
+
+.ticker-change.positive {
+    color: #48bb78;
+}
+
+/* Hero News Section */
+.hero-news {
+    background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+    color: white;
+    padding: 80px 0;
+}
+
+.hero-news-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 60px;
+    align-items: center;
+}
+
+.hero-news-main h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    line-height: 1.2;
+}
+
+.hero-news-main p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin: 0 0 30px 0;
+    line-height: 1.6;
+}
+
+.hero-news-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.hero-stat {
+    text-align: center;
+}
+
+.hero-stat-number {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.hero-stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .news-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-news-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+    
+    .hero-news-main h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-news-stats {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .market-ticker {
+        gap: 20px;
+    }
+}

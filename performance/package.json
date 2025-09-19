@@ -1,0 +1,24 @@
+{
+  "name": "ip-ingenuity-performance",
+  "version": "1.0.0",
+  "description": "High-performance components for IP Ingenuity platform",
+  "main": "load-balancer.js",
+  "scripts": {
+    "start": "node load-balancer.js",
+    "dev": "nodemon load-balancer.js",
+    "test": "node test-performance.js"
+  },
+  "dependencies": {
+    "fastify": "^4.24.3",
+    "@fastify/cors": "^8.4.0",
+    "@fastify/rate-limit": "^8.0.3",
+    "@fastify/compress": "^6.4.0",
+    "redis": "^4.6.10",
+    "pg": "^8.11.3",
+    "cluster": "^0.7.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "autocannon": "^7.12.0"
+  }
+}

@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+artifacts/
+cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+production.log
+server.log
+gateway.log
+
+# Temporary files
+tmp/
+temp/
+
+# Private keys and sensitive data
+*.pem
+*.key
+private-keys/
+
+# Hardhat
+coverage/
+coverage.json
+typechain/
+typechain-types/
+
+# Local development
+localhost-deployment.json
