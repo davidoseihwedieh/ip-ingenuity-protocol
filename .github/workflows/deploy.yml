@@ -6,24 +6,17 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Copy static files to docs
+      - name: Deploy to docs
         run: |
           mkdir -p docs
-          cp *.html docs/ || true
-          cp -r assets docs/ 2>/dev/null || true
-          cp -r css docs/ 2>/dev/null || true
-          cp -r js docs/ 2>/dev/null || true
-          echo "# IP Ingenuity Protocol" > docs/README.md
-      - name: Commit and push
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          cp *.html docs/ 2>/dev/null || true
+          echo "Deployed $(date)" > docs/README.md
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           git add docs/
-          git diff --staged --quiet || git commit -m "Deploy static website to docs"
+          git diff --staged --quiet || git commit -m "Deploy to GitHub Pages"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
