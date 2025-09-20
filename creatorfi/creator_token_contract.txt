@@ -1,0 +1,177 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract CreatorToken is ERC20, Ownable, ReentrancyGuard {
+    struct Creator {
+        string name;
+        string bio;
+        string[] platforms;
+        uint256 monthlyRevenue;
+        uint256 totalRaised;
+        uint256 reputationScore;
+        bool verified;
+    }
+    
+    struct RevenueStream {
+        string platform;
+        uint256 amount;
+        uint256 timestamp;
+        bool verified;
+    }
+    
+    Creator public creator;
+    RevenueStream[] public revenueHistory;
+    
+    mapping(address => uint256) public investorShares;
+    mapping(address => uint256) public lastClaimTime;
+    
+    uint256 public totalRevenue;
+    uint256 public platformFee = 300; // 3%
+    uint256 public constant BASIS_POINTS = 10000;
+    
+    event RevenueAdded(string platform, uint256 amount, uint256 timestamp);
+    event RevenueDistributed(uint256 totalAmount, uint256 perTokenAmount);
+    event TokensPurchased(address investor, uint256 amount, uint256 cost);
+    
+    modifier onlyCreator() {
+        require(msg.sender == owner(), "Only creator can call this");
+        _;
+    }
+    
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _creatorName,
+        string memory _bio,
+        string[] memory _platforms
+    ) ERC20(_name, _symbol) {
+        creator = Creator({
+            name: _creatorName,
+            bio: _bio,
+            platforms: _platforms,
+            monthlyRevenue: 0,
+            totalRaised: 0,
+            reputationScore: 100,
+            verified: false
+        });
+    }
+    
+    // Creator functions
+    function addRevenue(
+        string memory _platform,
+        uint256 _amount
+    ) external onlyCreator {
+        require(_amount > 0, "Revenue must be positive");
+        
+        revenueHistory.push(RevenueStream({
+            platform: _platform,
+            amount: _amount,
+            timestamp: block.timestamp,
+            verified: false
+        }));
+        
+        totalRevenue += _amount;
+        creator.monthlyRevenue = calculateMonthlyRevenue();
+        
+        emit RevenueAdded(_platform, _amount, block.timestamp);
+        
+        // Auto-distribute if enough accumulated
+        if (totalRevenue >= 1 ether) {
+            distributeRevenue();
+        }
+    }
+    
+    function distributeRevenue() public onlyCreator nonReentrant {
+        require(totalRevenue > 0, "No revenue to distribute");
+        require(totalSupply() > 0, "No tokens issued");
+        
+        uint256 platformFeeAmount = (totalRevenue * platformFee) / BASIS_POINTS;
+        uint256 distributionAmount = totalRevenue - platformFeeAmount;
+        uint256 perTokenAmount = distributionAmount / totalSupply();
+        
+        // Reset revenue counter
+        totalRevenue = 0;
+        
+        emit RevenueDistributed(distributionAmount, perTokenAmount);
+        
+        // Note: In production, implement a claim-based system
+        // This is simplified for demonstration
+    }
+    
+    // Investor functions
+    function purchaseTokens(uint256 _tokenAmount) external payable nonReentrant {
+        require(_tokenAmount > 0, "Must purchase positive amount");
+        require(msg.value > 0, "Must send ETH");
+        
+        uint256 tokenPrice = calculateTokenPrice();
+        uint256 totalCost = _tokenAmount * tokenPrice;
+        require(msg.value >= totalCost, "Insufficient payment");
+        
+        _mint(msg.sender, _tokenAmount);
+        investorShares[msg.sender] += _tokenAmount;
+        creator.totalRaised += msg.value;
+        
+        // Refund excess
+        if (msg.value > totalCost) {
+            payable(msg.sender).transfer(msg.value - totalCost);
+        }
+        
+        emit TokensPurchased(msg.sender, _tokenAmount, totalCost);
+    }
+    
+    function calculateTokenPrice() public view returns (uint256) {
+        // Dynamic pricing based on reputation and revenue
+        uint256 basePrice = 0.01 ether;
+        uint256 reputationMultiplier = creator.reputationScore;
+        uint256 revenueMultiplier = creator.monthlyRevenue > 0 ? 
+            (creator.monthlyRevenue / 1000) + 100 : 100;
+        
+        return (basePrice * reputationMultiplier * revenueMultiplier) / 10000;
+    }
+    
+    function calculateMonthlyRevenue() internal view returns (uint256) {
+        uint256 monthAgo = block.timestamp - 30 days;
+        uint256 monthlyTotal = 0;
+        
+        for (uint i = 0; i < revenueHistory.length; i++) {
+            if (revenueHistory[i].timestamp >= monthAgo) {
+                monthlyTotal += revenueHistory[i].amount;
+            }
+        }
+        
+        return monthlyTotal;
+    }
+    
+    // View functions
+    function getCreatorInfo() external view returns (
+        string memory name,
+        string memory bio,
+        string[] memory platforms,
+        uint256 monthlyRevenue,
+        uint256 totalRaised,
+        uint256 reputationScore,
+        bool verified
+    ) {
+        return (
+            creator.name,
+            creator.bio,
+            creator.platforms,
+            creator.monthlyRevenue,
+            creator.totalRaised,
+            creator.reputationScore,
+            creator.verified
+        );
+    }
+    
+    function getRevenueHistory() external view returns (RevenueStream[] memory) {
+        return revenueHistory;
+    }
+    
+    function getInvestorShares(address _investor) external view returns (uint256) {
+        return investorShares[_investor];
+    }
+}
