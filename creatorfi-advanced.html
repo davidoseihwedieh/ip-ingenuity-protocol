@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreatorFi Advanced - AI-Powered Creator Investment Platform</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-text { background: linear-gradient(to right, #9333ea, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-bg { background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); }
+        .ai-glow { box-shadow: 0 0 20px rgba(147, 51, 234, 0.3); }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const CreatorFiAdvanced = () => {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [aiRecommendations, setAiRecommendations] = useState([]);
+            const [portfolioData, setPortfolioData] = useState(null);
+            const [marketTrends, setMarketTrends] = useState(null);
+            const [realTimeData, setRealTimeData] = useState({});
+
+            useEffect(() => {
+                loadAIRecommendations();
+                loadPortfolioData();
+                loadMarketTrends();
+                startRealTimeUpdates();
+            }, []);
+
+            const loadAIRecommendations = async () => {
+                // Simulate AI recommendations
+                const recommendations = [
+                    {
+                        id: 1,
+                        name: "Alex Rivera",
+                        category: "Tech Education",
+                        aiScore: 94,
+                        predictedROI: 67,
+                        riskScore: 23,
+                        monthlyRevenue: 8500,
+                        growth: 23,
+                        reasoning: "Strong engagement metrics, consistent content quality, growing subscriber base in high-value niche"
+                    },
+                    {
+                        id: 2,
+                        name: "Maya Chen",
+                        category: "Indie Gaming",
+                        aiScore: 89,
+                        predictedROI: 45,
+                        riskScore: 31,
+                        monthlyRevenue: 12000,
+                        growth: 45,
+                        reasoning: "Viral content potential, diverse platform presence, strong community engagement"
+                    },
+                    {
+                        id: 3,
+                        name: "Jordan Blake",
+                        category: "Electronic Music",
+                        aiScore: 87,
+                        predictedROI: 52,
+                        riskScore: 28,
+                        monthlyRevenue: 15600,
+                        growth: 67,
+                        reasoning: "Trending genre, high-quality production, cross-platform monetization strategy"
+                    }
+                ];
+                setAiRecommendations(recommendations);
+            };
+
+            const loadPortfolioData = async () => {
+                const portfolio = {
+                    totalValue: 45750,
+                    totalInvested: 32000,
+                    totalROI: 42.97,
+                    activeInvestments: 8,
+                    monthlyReturn: 1850,
+                    diversificationScore: 78,
+                    riskScore: 34,
+                    investments: [
+                        { name: "TechGuru Mike", value: 12500, roi: 67, risk: 25 },
+                        { name: "ArtistLuna", value: 8900, roi: 34, risk: 42 },
+                        { name: "FitnessCoach Sam", value: 7800, roi: 28, risk: 18 },
+                        { name: "MusicMaker Jay", value: 6200, roi: 89, risk: 55 },
+                        { name: "CookingQueen Ana", value: 5400, roi: 23, risk: 15 }
+                    ]
+                };
+                setPortfolioData(portfolio);
+            };
+
+            const loadMarketTrends = async () => {
+                const trends = {
+                    hotCategories: [
+                        { name: "AI/Tech", growth: 156, creators: 1247 },
+                        { name: "Sustainable Living", growth: 134, creators: 892 },
+                        { name: "Mental Health", growth: 128, creators: 654 },
+                        { name: "Crypto Education", growth: 98, creators: 1834 }
+                    ],
+                    marketSentiment: 72,
+                    totalMarketCap: "2.4M",
+                    activeInvestors: 8932,
+                    avgROI: 34.5
+                };
+                setMarketTrends(trends);
+            };
+
+            const startRealTimeUpdates = () => {
+                // Simulate real-time data updates
+                const interval = setInterval(() => {
+                    setRealTimeData(prev => ({
+                        ...prev,
+                        timestamp: new Date().toLocaleTimeString(),
+                        marketActivity: Math.floor(Math.random() * 100),
+                        newInvestments: Math.floor(Math.random() * 50),
+                        activeUsers: 1200 + Math.floor(Math.random() * 300)
+                    }));
+                }, 5000);
+
+                return () => clearInterval(interval);
+            };
+
+            const AIRecommendationCard = ({ creator }) => (
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all ai-glow">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900">{creator.name}</h3>
+                            <p className="text-gray-600">{creator.category}</p>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-2xl font-bold gradient-text">{creator.aiScore}</div>
+                            <div className="text-sm text-gray-500">AI Score</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center">
+                            <div className="text-lg font-bold text-green-600">{creator.predictedROI}%</div>
+                            <div className="text-xs text-gray-500">Predicted ROI</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-lg font-bold text-blue-600">${creator.monthlyRevenue.toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">Monthly Revenue</div>
+                        </div>
+                        <div className="text-center">
+                            <div className={`text-lg font-bold ${creator.riskScore < 30 ? 'text-green-600' : creator.riskScore < 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {creator.riskScore}%
+                            </div>
+                            <div className="text-xs text-gray-500">Risk Score</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-gray-700">{creator.reasoning}</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button className="flex-1 gradient-bg text-white py-2 px-4 rounded-lg hover:opacity-90 transition-all">
+                            Invest Now
+                        </button>
+                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                            📊 Details
+                        </button>
+                    </div>
+                </div>
+            );
+
+            const PortfolioDashboard = () => (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-3xl font-bold gradient-text">${portfolioData?.totalValue.toLocaleString()}</div>
+                            <div className="text-gray-600">Total Portfolio Value</div>
+                            <div className="text-sm text-green-600 mt-2">+{portfolioData?.totalROI}% ROI</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-3xl font-bold text-blue-600">{portfolioData?.activeInvestments}</div>
+                            <div className="text-gray-600">Active Investments</div>
+                            <div className="text-sm text-blue-600 mt-2">Diversified Portfolio</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-3xl font-bold text-green-600">${portfolioData?.monthlyReturn}</div>
+                            <div className="text-gray-600">Monthly Returns</div>
+                            <div className="text-sm text-green-600 mt-2">Passive Income</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-3xl font-bold text-purple-600">{portfolioData?.diversificationScore}</div>
+                            <div className="text-gray-600">Diversification Score</div>
+                            <div className="text-sm text-purple-600 mt-2">Well Balanced</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 shadow-lg">
+                        <h3 className="text-xl font-bold mb-4">Your Investments</h3>
+                        <div className="space-y-3">
+                            {portfolioData?.investments.map((investment, index) => (
+                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-bold">
+                                            {investment.name.split(' ').map(n => n[0]).join('')}
+                                        </div>
+                                        <div>
+                                            <div className="font-medium">{investment.name}</div>
+                                            <div className="text-sm text-gray-600">${investment.value.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className={`font-bold ${investment.roi > 50 ? 'text-green-600' : investment.roi > 25 ? 'text-blue-600' : 'text-gray-600'}`}>
+                                            +{investment.roi}%
+                                        </div>
+                                        <div className="text-sm text-gray-500">Risk: {investment.risk}%</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const MarketAnalytics = () => (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-2xl font-bold text-purple-600">{marketTrends?.totalMarketCap}</div>
+                            <div className="text-gray-600">Total Market Cap</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-2xl font-bold text-blue-600">{marketTrends?.activeInvestors.toLocaleString()}</div>
+                            <div className="text-gray-600">Active Investors</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-2xl font-bold text-green-600">{marketTrends?.avgROI}%</div>
+                            <div className="text-gray-600">Average ROI</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <div className="text-2xl font-bold text-orange-600">{marketTrends?.marketSentiment}%</div>
+                            <div className="text-gray-600">Market Sentiment</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 shadow-lg">
+                        <h3 className="text-xl font-bold mb-4">🔥 Trending Categories</h3>
+                        <div className="space-y-4">
+                            {marketTrends?.hotCategories.map((category, index) => (
+                                <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                                    <div>
+                                        <div className="font-bold text-gray-900">{category.name}</div>
+                                        <div className="text-sm text-gray-600">{category.creators} active creators</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-green-600">+{category.growth}%</div>
+                                        <div className="text-sm text-gray-500">Growth</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 shadow-lg">
+                        <h3 className="text-xl font-bold mb-4">📊 Real-Time Activity</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-600 pulse">{realTimeData.activeUsers}</div>
+                                <div className="text-sm text-gray-600">Active Users</div>
+                            </div>
+                            <div className="text-center p-4 bg-green-50 rounded-lg">
+                                <div className="text-2xl font-bold text-green-600 pulse">{realTimeData.newInvestments}</div>
+                                <div className="text-sm text-gray-600">New Investments</div>
+                            </div>
+                            <div className="text-center p-4 bg-purple-50 rounded-lg">
+                                <div className="text-2xl font-bold text-purple-600 pulse">{realTimeData.marketActivity}%</div>
+                                <div className="text-sm text-gray-600">Market Activity</div>
+                            </div>
+                        </div>
+                        <div className="text-center mt-4 text-sm text-gray-500">
+                            Last updated: {realTimeData.timestamp}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+                    {/* Navigation */}
+                    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-6 py-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold">🤖</span>
+                                    </div>
+                                    <span className="text-xl font-bold gradient-text">CreatorFi Advanced</span>
+                                </div>
+                                
+                                <div className="flex items-center space-x-6">
+                                    <button 
+                                        onClick={() => setActiveTab('dashboard')}
+                                        className={`px-4 py-2 rounded-lg transition-all ${activeTab === 'dashboard' ? 'gradient-bg text-white' : 'text-gray-600 hover:text-purple-600'}`}
+                                    >
+                                        📊 Dashboard
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTab('ai-recommendations')}
+                                        className={`px-4 py-2 rounded-lg transition-all ${activeTab === 'ai-recommendations' ? 'gradient-bg text-white' : 'text-gray-600 hover:text-purple-600'}`}
+                                    >
+                                        🤖 AI Recommendations
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTab('market-analytics')}
+                                        className={`px-4 py-2 rounded-lg transition-all ${activeTab === 'market-analytics' ? 'gradient-bg text-white' : 'text-gray-600 hover:text-purple-600'}`}
+                                    >
+                                        📈 Market Analytics
+                                    </button>
+                                    <a href="index.html" className="text-gray-600 hover:text-purple-600 transition-colors">🏠 Home</a>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Main Content */}
+                    <div className="max-w-7xl mx-auto px-6 py-8">
+                        {activeTab === 'dashboard' && portfolioData && <PortfolioDashboard />}
+                        
+                        {activeTab === 'ai-recommendations' && (
+                            <div>
+                                <div className="text-center mb-8">
+                                    <h1 className="text-4xl font-bold text-gray-900 mb-4">🤖 AI-Powered Recommendations</h1>
+                                    <p className="text-xl text-gray-600">Advanced machine learning algorithms analyze creator potential and market trends</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {aiRecommendations.map(creator => (
+                                        <AIRecommendationCard key={creator.id} creator={creator} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeTab === 'market-analytics' && marketTrends && <MarketAnalytics />}
+                    </div>
+
+                    {/* Footer */}
+                    <footer className="bg-gray-900 text-white py-12 mt-16">
+                        <div className="max-w-7xl mx-auto px-6 text-center">
+                            <div className="flex items-center justify-center space-x-2 mb-4">
+                                <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
+                                    <span className="text-white">🤖</span>
+                                </div>
+                                <span className="text-xl font-bold">CreatorFi Advanced</span>
+                            </div>
+                            <p className="text-gray-400 mb-4">AI-powered creator investment platform with advanced analytics</p>
+                            <p className="text-sm text-gray-500">Built with machine learning and real-time data processing</p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CreatorFiAdvanced />, document.getElementById('root'));
+    </script>
+</body>
+</html>

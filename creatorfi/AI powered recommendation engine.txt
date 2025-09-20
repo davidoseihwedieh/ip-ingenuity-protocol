@@ -1,0 +1,281 @@
+"""
+CreatorFi AI Recommendation Engine
+Advanced machine learning system for creator discovery and investment recommendations
+"""
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import PCA
+import tensorflow as tf
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, LSTM, Embedding, Input, Concatenate, Dropout
+from typing import Dict, List, Tuple, Optional
+import logging
+from datetime import datetime, timedelta
+import redis
+import pickle
+import json
+
+class CreatorRecommendationEngine:
+    """
+    Advanced AI system for creator discovery and investment recommendations
+    """
+    
+    def __init__(self, redis_client=None):
+        self.redis_client = redis_client
+        self.models = {}
+        self.scalers = {}
+        self.encoders = {}
+        self.feature_importance = {}
+        
+        # Model configurations
+        self.model_configs = {
+            'revenue_predictor': {
+                'n_estimators': 100,
+                'max_depth': 10,
+                'random_state': 42
+            },
+            'success_classifier': {
+                'n_estimators': 150,
+                'learning_rate': 0.1,
+                'max_depth': 8
+            },
+            'risk_assessor': {
+                'hidden_layers': [128, 64, 32],
+                'dropout_rate': 0.3,
+                'epochs': 100
+            }
+        }
+        
+        self.logger = logging.getLogger(__name__)
+    
+    def prepare_creator_features(self, creator_data: Dict) -> np.ndarray:
+        """
+        Extract and engineer features from creator data
+        """
+        features = []
+        
+        # Basic metrics
+        features.extend([
+            creator_data.get('monthly_revenue', 0),
+            creator_data.get('follower_count', 0),
+            creator_data.get('engagement_rate', 0),
+            creator_data.get('content_frequency', 0),
+            creator_data.get('reputation_score', 0),
+            creator_data.get('platform_count', 0),
+            creator_data.get('days_active', 0)
+        ])
+        
+        # Growth metrics
+        revenue_history = creator_data.get('revenue_history', [])
+        if len(revenue_history) >= 2:
+            features.extend([
+                self._calculate_growth_rate(revenue_history),
+                self._calculate_revenue_consistency(revenue_history),
+                self._calculate_trend_strength(revenue_history)
+            ])
+        else:
+            features.extend([0, 0, 0])
+        
+        # Platform diversity features
+        platforms = creator_data.get('platforms', [])
+        platform_features = self._encode_platforms(platforms)
+        features.extend(platform_features)
+        
+        # Content analysis features
+        content_data = creator_data.get('content_analysis', {})
+        features.extend([
+            content_data.get('sentiment_score', 0),
+            content_data.get('quality_score', 0),
+            content_data.get('uniqueness_score', 0),
+            content_data.get('viral_potential', 0)
+        ])
+        
+        # Audience analysis
+        audience_data = creator_data.get('audience_analysis', {})
+        features.extend([
+            audience_data.get('demographic_score', 0),
+            audience_data.get('engagement_quality', 0),
+            audience_data.get('audience_growth_rate', 0),
+            audience_data.get('retention_rate', 0)
+        ])
+        
+        # Temporal features
+        created_date = datetime.strptime(creator_data.get('created_date', '2024-01-01'), '%Y-%m-%d')
+        days_since_creation = (datetime.now() - created_date).days
+        features.extend([
+            days_since_creation,
+            self._get_seasonal_factor(datetime.now()),
+            self._get_platform_lifecycle_factor(platforms)
+        ])
+        
+        return np.array(features)
+    
+    def prepare_investor_features(self, investor_data: Dict) -> np.ndarray:
+        """
+        Extract features from investor profile and behavior
+        """
+        features = []
+        
+        # Investment behavior
+        features.extend([
+            investor_data.get('total_invested', 0),
+            investor_data.get('portfolio_count', 0),
+            investor_data.get('avg_investment_size', 0),
+            investor_data.get('investment_frequency', 0),
+            investor_data.get('roi_average', 0),
+            investor_data.get('risk_tolerance', 5)  # 1-10 scale
+        ])
+        
+        # Category preferences
+        preferred_categories = investor_data.get('preferred_categories', [])
+        category_features = self._encode_categories(preferred_categories)
+        features.extend(category_features)
+        
+        # Investment timing patterns
+        investment_history = investor_data.get('investment_history', [])
+        features.extend([
+            self._calculate_investment_timing_score(investment_history),
+            self._calculate_diversification_score(investment_history),
+            self._calculate_success_rate(investment_history)
+        ])
+        
+        # Demographic and psychographic
+        features.extend([
+            investor_data.get('age', 30),
+            investor_data.get('income_bracket', 5),  # 1-10 scale
+            investor_data.get('tech_savviness', 5),   # 1-10 scale
+            investor_data.get('social_influence', 5)  # 1-10 scale
+        ])
+        
+        return np.array(features)
+    
+    def train_revenue_predictor(self, training_data: List[Dict]):
+        """
+        Train model to predict creator revenue potential
+        """
+        X = []
+        y = []
+        
+        for creator in training_data:
+            features = self.prepare_creator_features(creator)
+            # Predict next 3 months revenue
+            target_revenue = creator.get('future_revenue_3m', 0)
+            
+            X.append(features)
+            y.append(target_revenue)
+        
+        X = np.array(X)
+        y = np.array(y)
+        
+        # Scale features
+        self.scalers['revenue_predictor'] = StandardScaler()
+        X_scaled = self.scalers['revenue_predictor'].fit_transform(X)
+        
+        # Train model
+        self.models['revenue_predictor'] = RandomForestRegressor(
+            **self.model_configs['revenue_predictor']
+        )
+        self.models['revenue_predictor'].fit(X_scaled, y)
+        
+        # Store feature importance
+        self.feature_importance['revenue_predictor'] = self.models['revenue_predictor'].feature_importances_
+        
+        self.logger.info("Revenue predictor model trained successfully")
+    
+    def train_success_classifier(self, training_data: List[Dict]):
+        """
+        Train model to classify creator success probability
+        """
+        X = []
+        y = []
+        
+        for creator in training_data:
+            features = self.prepare_creator_features(creator)
+            # Success defined as 50%+ ROI for investors within 6 months
+            success = creator.get('investor_roi_6m', 0) >= 0.5
+            
+            X.append(features)
+            y.append(int(success))
+        
+        X = np.array(X)
+        y = np.array(y)
+        
+        # Scale features
+        self.scalers['success_classifier'] = StandardScaler()
+        X_scaled = self.scalers['success_classifier'].fit_transform(X)
+        
+        # Train model
+        self.models['success_classifier'] = GradientBoostingClassifier(
+            **self.model_configs['success_classifier']
+        )
+        self.models['success_classifier'].fit(X_scaled, y)
+        
+        self.feature_importance['success_classifier'] = self.models['success_classifier'].feature_importances_
+        
+        self.logger.info("Success classifier model trained successfully")
+    
+    def train_deep_recommendation_model(self, interaction_data: List[Dict]):
+        """
+        Train deep learning model for personalized recommendations
+        """
+        # Prepare data for neural collaborative filtering
+        creator_ids = []
+        investor_ids = []
+        features = []
+        ratings = []
+        
+        creator_encoder = LabelEncoder()
+        investor_encoder = LabelEncoder()
+        
+        # Extract unique IDs
+        all_creator_ids = list(set([d['creator_id'] for d in interaction_data]))
+        all_investor_ids = list(set([d['investor_id'] for d in interaction_data]))
+        
+        creator_encoder.fit(all_creator_ids)
+        investor_encoder.fit(all_investor_ids)
+        
+        for interaction in interaction_data:
+            creator_ids.append(creator_encoder.transform([interaction['creator_id']])[0])
+            investor_ids.append(investor_encoder.transform([interaction['investor_id']])[0])
+            
+            # Combine creator and investor features
+            creator_features = self.prepare_creator_features(interaction['creator_data'])
+            investor_features = self.prepare_investor_features(interaction['investor_data'])
+            combined_features = np.concatenate([creator_features, investor_features])
+            features.append(combined_features)
+            
+            # Rating based on actual investment outcome
+            rating = min(5.0, max(1.0, interaction.get('satisfaction_score', 3.0)))
+            ratings.append(rating)
+        
+        # Build neural network model
+        n_creators = len(all_creator_ids)
+        n_investors = len(all_investor_ids)
+        n_features = len(features[0])
+        
+        # Creator embedding
+        creator_input = Input(shape=(), name='creator_id')
+        creator_embedding = Embedding(n_creators, 50, name='creator_embedding')(creator_input)
+        creator_vec = tf.keras.layers.Flatten()(creator_embedding)
+        
+        # Investor embedding
+        investor_input = Input(shape=(), name='investor_id')
+        investor_embedding = Embedding(n_investors, 50, name='investor_embedding')(investor_input)
+        investor_vec = tf.keras.layers.Flatten()(investor_embedding)
+        
+        # Feature input
+        feature_input = Input(shape=(n_features,), name='features')
+        feature_dense = Dense(64, activation='relu')(feature_input)
+        
+        # Combine all inputs
+        combined = Concatenate()([creator_vec, investor_vec, feature_dense])
+        
+        # Deep layers
+        x = Dense(128, activation='relu')(combined)
+        x = Dropout(0.3)(x)
+        x = Dense(64

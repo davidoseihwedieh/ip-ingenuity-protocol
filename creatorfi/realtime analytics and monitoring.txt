@@ -1,0 +1,825 @@
+/**
+ * CreatorFi Real-Time Analytics & Monitoring System
+ * Advanced real-time data processing, alerts, and performance monitoring
+ */
+
+const WebSocket = require('ws');
+const Redis = require('redis');
+const EventEmitter = require('events');
+const { Kafka } = require('kafkajs');
+const InfluxDB = require('@influxdata/influxdb-client');
+
+class RealTimeAnalytics extends EventEmitter {
+    constructor(config) {
+        super();
+        this.config = config;
+        this.redis = Redis.createClient(config.redis);
+        this.wsServer = null;
+        this.clients = new Map();
+        this.metrics = new Map();
+        this.alerts = new Map();
+        this.streamProcessors = new Map();
+        
+        // Initialize InfluxDB for time-series data
+        this.influxDB = new InfluxDB.InfluxDB({
+            url: config.influxdb.url,
+            token: config.influxdb.token,
+        });
+        this.writeAPI = this.influxDB.getWriteApi(
+            config.influxdb.org,
+            config.influxdb.bucket
+        );
+        
+        // Initialize Kafka for event streaming
+        this.kafka = Kafka({
+            clientId: 'creatorfi-analytics',
+            brokers: config.kafka.brokers,
+        });
+        this.producer = this.kafka.producer();
+        this.consumer = this.kafka.consumer({ groupId: 'analytics-group' });
+        
+        this.initializeWebSocket();
+        this.initializeKafka();
+        this.setupMetricProcessors();
+        this.setupAlertSystem();
+    }
+
+    async initializeWebSocket() {
+        this.wsServer = new WebSocket.Server({
+            port: this.config.websocket.port,
+            verifyClient: this.authenticateClient.bind(this)
+        });
+
+        this.wsServer.on('connection', (ws, request) => {
+            const clientId = this.extractClientId(request);
+            const clientType = this.extractClientType(request); // 'creator', 'investor', 'admin'
+            
+            this.clients.set(clientId, {
+                ws,
+                type: clientType,
+                subscriptions: new Set(),
+                lastActivity: Date.now()
+            });
+
+            ws.on('message', (message) => {
+                this.handleClientMessage(clientId, JSON.parse(message));
+            });
+
+            ws.on('close', () => {
+                this.clients.delete(clientId);
+            });
+
+            // Send initial data
+            this.sendInitialData(clientId);
+        });
+
+        console.log(`WebSocket server started on port ${this.config.websocket.port}`);
+    }
+
+    async initializeKafka() {
+        await this.producer.connect();
+        await this.consumer.connect();
+
+        // Subscribe to relevant topics
+        await this.consumer.subscribe({
+            topics: [
+                'creator.revenue.updated',
+                'investment.created',
+                'token.purchased',
+                'user.activity',
+                'platform.metrics'
+            ]
+        });
+
+        // Start consuming messages
+        await this.consumer.run({
+            eachMessage: async ({ topic, partition, message }) => {
+                await this.processKafkaMessage(topic, message);
+            },
+        });
+    }
+
+    setupMetricProcessors() {
+        // Revenue metrics processor
+        this.streamProcessors.set('revenue', {
+            process: (data) => this.processRevenueMetrics(data),
+            aggregationWindow: 60000, // 1 minute
+            retentionPeriod: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Investment metrics processor
+        this.streamProcessors.set('investment', {
+            process: (data) => this.processInvestmentMetrics(data),
+            aggregationWindow: 60000,
+            retentionPeriod: 90 * 24 * 60 * 60 * 1000 // 90 days
+        });
+
+        // Platform performance processor
+        this.streamProcessors.set('platform', {
+            process: (data) => this.processPlatformMetrics(data),
+            aggregationWindow: 30000, // 30 seconds
+            retentionPeriod: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // User activity processor
+        this.streamProcessors.set('activity', {
+            process: (data) => this.processActivityMetrics(data),
+            aggregationWindow: 5000, // 5 seconds
+            retentionPeriod: 24 * 60 * 60 * 1000 // 24 hours
+        });
+    }
+
+    setupAlertSystem() {
+        // Revenue anomaly alerts
+        this.alerts.set('revenue_anomaly', {
+            condition: (current, historical) => {
+                const avgRevenue = historical.reduce((sum, val) => sum + val, 0) / historical.length;
+                const threshold = avgRevenue * 0.3; // 30% deviation
+                return Math.abs(current - avgRevenue) > threshold;
+            },
+            severity: 'medium',
+            cooldown: 3600000 // 1 hour
+        });
+
+        // Large investment alerts
+        this.alerts.set('large_investment', {
+            condition: (amount) => amount > 10000, // $10k threshold
+            severity: 'high',
+            cooldown: 0 // No cooldown
+        });
+
+        // Platform performance alerts
+        this.alerts.set('platform_performance', {
+            condition: (metrics) => {
+                return metrics.responseTime > 2000 || // 2s response time
+                       metrics.errorRate > 0.05 || // 5% error rate
+                       metrics.cpuUsage > 0.8; // 80% CPU usage
+            },
+            severity: 'critical',
+            cooldown: 300000 // 5 minutes
+        });
+
+        // Token price volatility alerts
+        this.alerts.set('token_volatility', {
+            condition: (priceChange) => Math.abs(priceChange) > 0.15, // 15% change
+            severity: 'medium',
+            cooldown: 1800000 // 30 minutes
+        });
+    }
+
+    async processKafkaMessage(topic, message) {
+        const data = JSON.parse(message.value.toString());
+        const timestamp = Date.now();
+
+        switch (topic) {
+            case 'creator.revenue.updated':
+                await this.handleRevenueUpdate(data, timestamp);
+                break;
+            case 'investment.created':
+                await this.handleNewInvestment(data, timestamp);
+                break;
+            case 'token.purchased':
+                await this.handleTokenPurchase(data, timestamp);
+                break;
+            case 'user.activity':
+                await this.handleUserActivity(data, timestamp);
+                break;
+            case 'platform.metrics':
+                await this.handlePlatformMetrics(data, timestamp);
+                break;
+        }
+    }
+
+    async handleRevenueUpdate(data, timestamp) {
+        const { creatorId, platform, amount, previousAmount } = data;
+        
+        // Calculate metrics
+        const change = amount - (previousAmount || 0);
+        const changePercent = previousAmount ? (change / previousAmount) * 100 : 0;
+
+        // Store in time-series database
+        const point = new InfluxDB.Point('revenue')
+            .tag('creator_id', creatorId)
+            .tag('platform', platform)
+            .floatField('amount', amount)
+            .floatField('change', change)
+            .floatField('change_percent', changePercent)
+            .timestamp(new Date(timestamp));
+        
+        this.writeAPI.writePoint(point);
+
+        // Check for alerts
+        await this.checkRevenueAlerts(creatorId, amount, changePercent);
+
+        // Broadcast to relevant clients
+        await this.broadcastToSubscribers('revenue_update', {
+            creatorId,
+            platform,
+            amount,
+            change,
+            changePercent,
+            timestamp
+        });
+
+        // Update real-time dashboard metrics
+        await this.updateDashboardMetrics('revenue', {
+            totalRevenue: await this.getTotalPlatformRevenue(),
+            avgCreatorRevenue: await this.getAverageCreatorRevenue(),
+            topPerformers: await this.getTopPerformingCreators(5)
+        });
+    }
+
+    async handleNewInvestment(data, timestamp) {
+        const { investorId, creatorId, amount, tokenAmount } = data;
+
+        // Store investment data
+        const point = new InfluxDB.Point('investment')
+            .tag('investor_id', investorId)
+            .tag('creator_id', creatorId)
+            .floatField('amount', amount)
+            .floatField('token_amount', tokenAmount)
+            .timestamp(new Date(timestamp));
+        
+        this.writeAPI.writePoint(point);
+
+        // Check for large investment alerts
+        if (amount > 10000) {
+            await this.triggerAlert('large_investment', {
+                investorId,
+                creatorId,
+                amount,
+                timestamp
+            });
+        }
+
+        // Update real-time metrics
+        await this.updateInvestmentMetrics(creatorId, amount);
+
+        // Broadcast to creator and relevant investors
+        await this.broadcastToCreator(creatorId, 'new_investment', {
+            amount,
+            tokenAmount,
+            totalInvestors: await this.getCreatorInvestorCount(creatorId),
+            totalRaised: await this.getCreatorTotalRaised(creatorId)
+        });
+    }
+
+    async handleTokenPurchase(data, timestamp) {
+        const { creatorId, purchaserId, tokenAmount, price } = data;
+
+        // Calculate token metrics
+        const totalSupply = await this.getTokenTotalSupply(creatorId);
+        const marketCap = totalSupply * price;
+        const priceChange = await this.calculatePriceChange(creatorId, price);
+
+        // Store token data
+        const point = new InfluxDB.Point('token_activity')
+            .tag('creator_id', creatorId)
+            .tag('purchaser_id', purchaserId)
+            .floatField('token_amount', tokenAmount)
+            .floatField('price', price)
+            .floatField('market_cap', marketCap)
+            .floatField('price_change', priceChange)
+            .timestamp(new Date(timestamp));
+        
+        this.writeAPI.writePoint(point);
+
+        // Check for volatility alerts
+        if (Math.abs(priceChange) > 0.15) {
+            await this.triggerAlert('token_volatility', {
+                creatorId,
+                price,
+                creatorId,
+            price,
+            priceChange,
+            marketCap,
+            volume24h: await this.get24HourVolume(creatorId),
+            timestamp
+        });
+    }
+
+    async handleUserActivity(data, timestamp) {
+        const { userId, userType, action, metadata } = data;
+
+        // Store activity data
+        const point = new InfluxDB.Point('user_activity')
+            .tag('user_id', userId)
+            .tag('user_type', userType)
+            .tag('action', action)
+            .stringField('metadata', JSON.stringify(metadata))
+            .timestamp(new Date(timestamp));
+        
+        this.writeAPI.writePoint(point);
+
+        // Update real-time activity metrics
+        await this.updateActivityMetrics(userType, action);
+
+        // Broadcast platform activity updates
+        if (this.shouldBroadcastActivity(action)) {
+            await this.broadcastToSubscribers('platform_activity', {
+                userType,
+                action,
+                timestamp,
+                activeUsers: await this.getActiveUserCount(),
+                platformLoad: await this.getPlatformLoad()
+            });
+        }
+    }
+
+    async handlePlatformMetrics(data, timestamp) {
+        const { responseTime, errorRate, cpuUsage, memoryUsage, activeConnections } = data;
+
+        // Store platform metrics
+        const point = new InfluxDB.Point('platform_performance')
+            .floatField('response_time', responseTime)
+            .floatField('error_rate', errorRate)
+            .floatField('cpu_usage', cpuUsage)
+            .floatField('memory_usage', memoryUsage)
+            .intField('active_connections', activeConnections)
+            .timestamp(new Date(timestamp));
+        
+        this.writeAPI.writePoint(point);
+
+        // Check for performance alerts
+        if (responseTime > 2000 || errorRate > 0.05 || cpuUsage > 0.8) {
+            await this.triggerAlert('platform_performance', {
+                responseTime,
+                errorRate,
+                cpuUsage,
+                timestamp
+            });
+        }
+
+        // Broadcast to admin clients
+        await this.broadcastToAdmins('platform_metrics', {
+            responseTime,
+            errorRate,
+            cpuUsage,
+            memoryUsage,
+            activeConnections,
+            timestamp
+        });
+    }
+
+    async checkRevenueAlerts(creatorId, currentRevenue, changePercent) {
+        // Get historical revenue data
+        const historicalData = await this.getHistoricalRevenue(creatorId, 30); // Last 30 days
+        
+        if (historicalData.length < 5) return; // Need enough data points
+
+        const alert = this.alerts.get('revenue_anomaly');
+        if (alert.condition(currentRevenue, historicalData)) {
+            await this.triggerAlert('revenue_anomaly', {
+                creatorId,
+                currentRevenue,
+                changePercent,
+                timestamp: Date.now()
+            });
+        }
+    }
+
+    async triggerAlert(alertType, data) {
+        const alertConfig = this.alerts.get(alertType);
+        const alertKey = `alert:${alertType}:${data.creatorId || 'platform'}`;
+        
+        // Check cooldown
+        const lastAlert = await this.redis.get(alertKey);
+        if (lastAlert && (Date.now() - parseInt(lastAlert)) < alertConfig.cooldown) {
+            return;
+        }
+
+        // Set cooldown
+        await this.redis.setex(alertKey, alertConfig.cooldown / 1000, Date.now().toString());
+
+        // Create alert
+        const alert = {
+            id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: alertType,
+            severity: alertConfig.severity,
+            data,
+            timestamp: Date.now(),
+            acknowledged: false
+        };
+
+        // Store alert
+        await this.redis.lpush('alerts', JSON.stringify(alert));
+
+        // Send notifications
+        await this.sendAlertNotifications(alert);
+
+        // Broadcast to relevant clients
+        await this.broadcastAlert(alert);
+    }
+
+    async sendAlertNotifications(alert) {
+        // Email notifications for critical alerts
+        if (alert.severity === 'critical') {
+            await this.sendEmailAlert(alert);
+        }
+
+        // Slack notifications for high severity
+        if (['critical', 'high'].includes(alert.severity)) {
+            await this.sendSlackAlert(alert);
+        }
+
+        // Push notifications to mobile apps
+        await this.sendPushNotification(alert);
+    }
+
+    async broadcastToSubscribers(eventType, data) {
+        const message = JSON.stringify({
+            type: eventType,
+            data,
+            timestamp: Date.now()
+        });
+
+        for (const [clientId, client] of this.clients) {
+            if (client.subscriptions.has(eventType)) {
+                try {
+                    client.ws.send(message);
+                    client.lastActivity = Date.now();
+                } catch (error) {
+                    console.error(`Failed to send to client ${clientId}:`, error);
+                    this.clients.delete(clientId);
+                }
+            }
+        }
+    }
+
+    async broadcastToCreator(creatorId, eventType, data) {
+        const message = JSON.stringify({
+            type: eventType,
+            data,
+            timestamp: Date.now()
+        });
+
+        for (const [clientId, client] of this.clients) {
+            if (client.type === 'creator' && client.creatorId === creatorId) {
+                try {
+                    client.ws.send(message);
+                } catch (error) {
+                    console.error(`Failed to send to creator ${creatorId}:`, error);
+                }
+            }
+        }
+    }
+
+    async broadcastToAdmins(eventType, data) {
+        const message = JSON.stringify({
+            type: eventType,
+            data,
+            timestamp: Date.now()
+        });
+
+        for (const [clientId, client] of this.clients) {
+            if (client.type === 'admin') {
+                try {
+                    client.ws.send(message);
+                } catch (error) {
+                    console.error(`Failed to send to admin ${clientId}:`, error);
+                }
+            }
+        }
+    }
+
+    handleClientMessage(clientId, message) {
+        const client = this.clients.get(clientId);
+        if (!client) return;
+
+        switch (message.type) {
+            case 'subscribe':
+                this.handleSubscription(clientId, message.events);
+                break;
+            case 'unsubscribe':
+                this.handleUnsubscription(clientId, message.events);
+                break;
+            case 'get_metrics':
+                this.handleMetricsRequest(clientId, message.params);
+                break;
+            case 'acknowledge_alert':
+                this.handleAlertAcknowledgment(clientId, message.alertId);
+                break;
+            case 'ping':
+                client.ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+                break;
+        }
+
+        client.lastActivity = Date.now();
+    }
+
+    handleSubscription(clientId, events) {
+        const client = this.clients.get(clientId);
+        if (!client) return;
+
+        events.forEach(event => {
+            if (this.isAuthorizedForEvent(clientId, event)) {
+                client.subscriptions.add(event);
+            }
+        });
+
+        client.ws.send(JSON.stringify({
+            type: 'subscription_confirmed',
+            events: Array.from(client.subscriptions)
+        }));
+    }
+
+    async handleMetricsRequest(clientId, params) {
+        const client = this.clients.get(clientId);
+        if (!client) return;
+
+        try {
+            const metrics = await this.getMetrics(params, client.type);
+            client.ws.send(JSON.stringify({
+                type: 'metrics_response',
+                data: metrics,
+                timestamp: Date.now()
+            }));
+        } catch (error) {
+            client.ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Failed to retrieve metrics',
+                timestamp: Date.now()
+            }));
+        }
+    }
+
+    async getMetrics(params, clientType) {
+        const { metric, timeRange, granularity, filters } = params;
+
+        // Build InfluxDB query based on parameters
+        let query = `from(bucket:"${this.config.influxdb.bucket}")
+            |> range(start: ${timeRange.start}, stop: ${timeRange.stop})
+            |> filter(fn: (r) => r._measurement == "${metric}")`;
+
+        // Add filters based on client type and permissions
+        if (clientType === 'creator' && filters.creatorId) {
+            query += `|> filter(fn: (r) => r.creator_id == "${filters.creatorId}")`;
+        }
+
+        // Add aggregation
+        if (granularity && granularity !== 'raw') {
+            query += `|> aggregateWindow(every: ${granularity}, fn: mean, createEmpty: false)`;
+        }
+
+        // Execute query
+        const queryAPI = this.influxDB.getQueryApi(this.config.influxdb.org);
+        const results = [];
+
+        return new Promise((resolve, reject) => {
+            queryAPI.queryRows(query, {
+                next(row, tableMeta) {
+                    const o = tableMeta.toObject(row);
+                    results.push(o);
+                },
+                error(error) {
+                    reject(error);
+                },
+                complete() {
+                    resolve(results);
+                }
+            });
+        });
+    }
+
+    // Dashboard data aggregation methods
+    async updateDashboardMetrics(category, metrics) {
+        const key = `dashboard:${category}`;
+        await this.redis.hset(key, metrics);
+        await this.redis.expire(key, 300); // 5 minute expiry
+
+        // Broadcast dashboard updates
+        await this.broadcastToSubscribers('dashboard_update', {
+            category,
+            metrics
+        });
+    }
+
+    async getDashboardData(userType, userId = null) {
+        const dashboardData = {
+            timestamp: Date.now()
+        };
+
+        if (userType === 'admin') {
+            dashboardData.platform = await this.getPlatformDashboard();
+            dashboardData.revenue = await this.getRevenueDashboard();
+            dashboardData.investments = await this.getInvestmentDashboard();
+            dashboardData.users = await this.getUserDashboard();
+        } else if (userType === 'creator') {
+            dashboardData.creator = await this.getCreatorDashboard(userId);
+        } else if (userType === 'investor') {
+            dashboardData.investor = await this.getInvestorDashboard(userId);
+        }
+
+        return dashboardData;
+    }
+
+    async getPlatformDashboard() {
+        return {
+            totalUsers: await this.getTotalUserCount(),
+            activeUsers: await this.getActiveUserCount(),
+            totalRevenue: await this.getTotalPlatformRevenue(),
+            totalInvestments: await this.getTotalInvestments(),
+            platformFees: await this.getTotalPlatformFees(),
+            systemHealth: await this.getSystemHealth()
+        };
+    }
+
+    async getCreatorDashboard(creatorId) {
+        return {
+            monthlyRevenue: await this.getCreatorMonthlyRevenue(creatorId),
+            totalRaised: await this.getCreatorTotalRaised(creatorId),
+            tokenPrice: await this.getCreatorTokenPrice(creatorId),
+            investorCount: await this.getCreatorInvestorCount(creatorId),
+            reputationScore: await this.getCreatorReputationScore(creatorId),
+            recentActivity: await this.getCreatorRecentActivity(creatorId)
+        };
+    }
+
+    async getInvestorDashboard(investorId) {
+        return {
+            portfolioValue: await this.getInvestorPortfolioValue(investorId),
+            totalInvested: await this.getInvestorTotalInvested(investorId),
+            totalReturns: await this.getInvestorTotalReturns(investorId),
+            portfolioPerformance: await this.getInvestorPortfolioPerformance(investorId),
+            recentInvestments: await this.getInvestorRecentInvestments(investorId)
+        };
+    }
+
+    // Real-time data processing methods
+    async processRevenueMetrics(data) {
+        // Calculate rolling averages, trends, and predictions
+        const metrics = {
+            current: data.amount,
+            daily: await this.getDailyRevenue(data.creatorId),
+            weekly: await this.getWeeklyRevenue(data.creatorId),
+            monthly: await this.getMonthlyRevenue(data.creatorId),
+            trend: await this.getRevenueTrend(data.creatorId),
+            prediction: await this.predictNextMonthRevenue(data.creatorId)
+        };
+
+        return metrics;
+    }
+
+    async processInvestmentMetrics(data) {
+        const metrics = {
+            current: data.amount,
+            dailyVolume: await this.getDailyInvestmentVolume(),
+            weeklyVolume: await this.getWeeklyInvestmentVolume(),
+            avgInvestmentSize: await this.getAverageInvestmentSize(),
+            investorGrowth: await this.getInvestorGrowthRate(),
+            creatorFunding: await this.getCreatorFundingStats()
+        };
+
+        return metrics;
+    }
+
+    // Utility methods for data retrieval
+    async getTotalPlatformRevenue() {
+        const query = `from(bucket:"${this.config.influxdb.bucket}")
+            |> range(start: -30d)
+            |> filter(fn: (r) => r._measurement == "revenue")
+            |> sum()`;
+        
+        return await this.executeInfluxQuery(query);
+    }
+
+    async getActiveUserCount() {
+        const query = `from(bucket:"${this.config.influxdb.bucket}")
+            |> range(start: -1h)
+            |> filter(fn: (r) => r._measurement == "user_activity")
+            |> group(columns: ["user_id"])
+            |> count()`;
+        
+        return await this.executeInfluxQuery(query);
+    }
+
+    async executeInfluxQuery(query) {
+        const queryAPI = this.influxDB.getQueryApi(this.config.influxdb.org);
+        let result = 0;
+
+        return new Promise((resolve, reject) => {
+            queryAPI.queryRows(query, {
+                next(row, tableMeta) {
+                    const o = tableMeta.toObject(row);
+                    result = o._value || 0;
+                },
+                error(error) {
+                    reject(error);
+                },
+                complete() {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
+    // Authentication and authorization
+    authenticateClient(info) {
+        // Implement JWT token validation
+        const token = this.extractToken(info.req);
+        return this.validateToken(token);
+    }
+
+    extractClientId(request) {
+        // Extract client ID from JWT token or headers
+        return request.headers['x-client-id'] || 'anonymous';
+    }
+
+    extractClientType(request) {
+        // Extract client type from JWT token
+        return request.headers['x-client-type'] || 'guest';
+    }
+
+    isAuthorizedForEvent(clientId, eventType) {
+        const client = this.clients.get(clientId);
+        if (!client) return false;
+
+        // Define authorization rules
+        const authRules = {
+            admin: ['*'], // Admin can subscribe to everything
+            creator: ['revenue_update', 'investment_update', 'token_price_update'],
+            investor: ['portfolio_update', 'token_price_update', 'creator_update'],
+            guest: ['public_metrics']
+        };
+
+        const allowedEvents = authRules[client.type] || [];
+        return allowedEvents.includes('*') || allowedEvents.includes(eventType);
+    }
+
+    // Cleanup and maintenance
+    async cleanup() {
+        // Close WebSocket connections
+        this.wsServer.close();
+
+        // Disconnect from services
+        await this.producer.disconnect();
+        await this.consumer.disconnect();
+        await this.redis.quit();
+        this.writeAPI.close();
+
+        console.log('Real-time analytics system shut down');
+    }
+
+    // Health check endpoints
+    async getSystemHealth() {
+        return {
+            websocket: {
+                status: this.wsServer ? 'healthy' : 'down',
+                connections: this.clients.size
+            },
+            kafka: {
+                status: await this.checkKafkaHealth(),
+                lag: await this.getKafkaLag()
+            },
+            redis: {
+                status: await this.checkRedisHealth(),
+                memory: await this.getRedisMemory()
+            },
+            influxdb: {
+                status: await this.checkInfluxDBHealth(),
+                storage: await this.getInfluxDBStorage()
+            }
+        };
+    }
+
+    async checkKafkaHealth() {
+        try {
+            await this.producer.send({
+                topic: 'health-check',
+                messages: [{ value: 'ping' }]
+            });
+            return 'healthy';
+        } catch (error) {
+            return 'unhealthy';
+        }
+    }
+
+    async checkRedisHealth() {
+        try {
+            await this.redis.ping();
+            return 'healthy';
+        } catch (error) {
+            return 'unhealthy';
+        }
+    }
+
+    async checkInfluxDBHealth() {
+        try {
+            await this.influxDB.ping();
+            return 'healthy';
+        } catch (error) {
+            return 'unhealthy';
+        }
+    }
+}
+
+module.exports = RealTimeAnalytics;
+                timestamp
+            });
+        }
+
+        // Broadcast price update
+        await this.broadcastToSubscribers('token_price_update', {
+            creatorId,
+            price,
+            priceChange

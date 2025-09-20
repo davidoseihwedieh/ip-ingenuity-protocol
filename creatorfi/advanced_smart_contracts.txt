@@ -1,0 +1,508 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+/**
+ * @title CreatorTokenAdvanced
+ * @dev Advanced creator token with dynamic pricing, revenue predictions, and governance
+ */
+contract CreatorTokenAdvanced is ERC20, Ownable, ReentrancyGuard, Pausable {
+    using SafeMath for uint256;
+
+    // Structs
+    struct Creator {
+        string name;
+        string bio;
+        string[] platforms;
+        uint256 monthlyRevenue;
+        uint256 totalRaised;
+        uint256 reputationScore;
+        uint256 lastRevenueUpdate;
+        bool verified;
+        bool featured;
+        CreatorTier tier;
+    }
+
+    struct RevenueStream {
+        string platform;
+        uint256 amount;
+        uint256 timestamp;
+        bool verified;
+        bytes32 verificationHash;
+        address verifier;
+    }
+
+    struct Investment {
+        address investor;
+        uint256 amount;
+        uint256 tokenAmount;
+        uint256 timestamp;
+        uint256 vestingPeriod;
+        bool isSubscription;
+        uint256 subscriptionRate;
+    }
+
+    struct GovernanceProposal {
+        uint256 id;
+        string title;
+        string description;
+        address proposer;
+        uint256 forVotes;
+        uint256 againstVotes;
+        uint256 deadline;
+        bool executed;
+        ProposalType proposalType;
+    }
+
+    struct RevenueDistribution {
+        uint256 totalAmount;
+        uint256 distributionDate;
+        uint256 totalTokensAtSnapshot;
+        mapping(address => bool) claimed;
+        mapping(address => uint256) claimableAmount;
+    }
+
+    // Enums
+    enum CreatorTier { BRONZE, SILVER, GOLD, PLATINUM }
+    enum ProposalType { FEE_CHANGE, FEATURE_REQUEST, CREATOR_VERIFICATION, PLATFORM_UPGRADE }
+
+    // State variables
+    Creator public creator;
+    RevenueStream[] public revenueHistory;
+    Investment[] public investments;
+    GovernanceProposal[] public proposals;
+    
+    mapping(uint256 => RevenueDistribution) public distributions;
+    mapping(address => uint256) public investorShares;
+    mapping(address => uint256) public lastClaimTime;
+    mapping(address => bool) public authorizedVerifiers;
+    mapping(address => uint256) public subscriptionEndTime;
+    mapping(address => uint256) public vestingBalances;
+    
+    uint256 public totalRevenue;
+    uint256 public platformFee = 300; // 3%
+    uint256 public constant BASIS_POINTS = 10000;
+    uint256 public distributionCounter;
+    uint256 public proposalCounter;
+    uint256 public minInvestment = 0.01 ether;
+    uint256 public maxInvestment = 10 ether;
+    
+    // Dynamic pricing variables
+    uint256 public basePrice = 0.01 ether;
+    uint256 public priceMultiplier = 100;
+    uint256 public demandFactor = 100;
+    
+    // Chainlink price feed
+    AggregatorV3Interface internal priceFeed;
+    
+    // Events
+    event RevenueAdded(string platform, uint256 amount, uint256 timestamp, bool verified);
+    event RevenueDistributed(uint256 distributionId, uint256 totalAmount, uint256 perTokenAmount);
+    event TokensPurchased(address indexed investor, uint256 amount, uint256 cost, bool isSubscription);
+    event SubscriptionStarted(address indexed subscriber, uint256 rate, uint256 duration);
+    event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string title);
+    event VoteCast(uint256 indexed proposalId, address indexed voter, bool support, uint256 weight);
+    event CreatorTierUpdated(CreatorTier oldTier, CreatorTier newTier);
+    event RevenueVerified(uint256 indexed revenueIndex, address indexed verifier);
+
+    modifier onlyVerifier() {
+        require(authorizedVerifiers[msg.sender], "Not authorized verifier");
+        _;
+    }
+
+    modifier validInvestmentAmount() {
+        require(msg.value >= minInvestment && msg.value <= maxInvestment, "Invalid investment amount");
+        _;
+    }
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _creatorName,
+        string memory _bio,
+        string[] memory _platforms,
+        address _priceFeedAddress
+    ) ERC20(_name, _symbol) {
+        creator = Creator({
+            name: _creatorName,
+            bio: _bio,
+            platforms: _platforms,
+            monthlyRevenue: 0,
+            totalRaised: 0,
+            reputationScore: 100,
+            lastRevenueUpdate: block.timestamp,
+            verified: false,
+            featured: false,
+            tier: CreatorTier.BRONZE
+        });
+        
+        priceFeed = AggregatorV3Interface(_priceFeedAddress);
+        authorizedVerifiers[owner()] = true;
+    }
+
+    // Advanced Revenue Management
+    function addRevenueWithProof(
+        string memory _platform,
+        uint256 _amount,
+        bytes32 _verificationHash,
+        bytes memory _signature
+    ) external onlyOwner {
+        require(_amount > 0, "Revenue must be positive");
+        
+        // Verify signature (simplified - implement proper signature verification)
+        require(_verificationHash != bytes32(0), "Invalid verification hash");
+        
+        revenueHistory.push(RevenueStream({
+            platform: _platform,
+            amount: _amount,
+            timestamp: block.timestamp,
+            verified: false,
+            verificationHash: _verificationHash,
+            verifier: address(0)
+        }));
+        
+        totalRevenue = totalRevenue.add(_amount);
+        creator.monthlyRevenue = calculateMonthlyRevenue();
+        creator.lastRevenueUpdate = block.timestamp;
+        
+        updateCreatorTier();
+        emit RevenueAdded(_platform, _amount, block.timestamp, false);
+        
+        // Auto-distribute if threshold reached
+        if (totalRevenue >= getDistributionThreshold()) {
+            distributeRevenue();
+        }
+    }
+
+    function verifyRevenue(uint256 _revenueIndex) external onlyVerifier {
+        require(_revenueIndex < revenueHistory.length, "Invalid revenue index");
+        require(!revenueHistory[_revenueIndex].verified, "Already verified");
+        
+        revenueHistory[_revenueIndex].verified = true;
+        revenueHistory[_revenueIndex].verifier = msg.sender;
+        
+        updateReputationScore(10); // Bonus for verified revenue
+        emit RevenueVerified(_revenueIndex, msg.sender);
+    }
+
+    // Dynamic Token Pricing
+    function calculateTokenPrice() public view returns (uint256) {
+        uint256 reputationMultiplier = creator.reputationScore;
+        uint256 revenueMultiplier = creator.monthlyRevenue > 0 ? 
+            creator.monthlyRevenue.div(1000).add(100) : 100;
+        uint256 demandMultiplier = demandFactor;
+        uint256 tierMultiplier = getTierMultiplier();
+        
+        return basePrice
+            .mul(reputationMultiplier)
+            .mul(revenueMultiplier)
+            .mul(demandMultiplier)
+            .mul(tierMultiplier)
+            .div(100000000); // Normalize
+    }
+
+    function getTierMultiplier() internal view returns (uint256) {
+        if (creator.tier == CreatorTier.BRONZE) return 100;
+        if (creator.tier == CreatorTier.SILVER) return 125;
+        if (creator.tier == CreatorTier.GOLD) return 150;
+        if (creator.tier == CreatorTier.PLATINUM) return 200;
+        return 100;
+    }
+
+    // Advanced Investment Options
+    function purchaseTokens(uint256 _tokenAmount) external payable nonReentrant validInvestmentAmount {
+        uint256 tokenPrice = calculateTokenPrice();
+        uint256 totalCost = _tokenAmount.mul(tokenPrice);
+        require(msg.value >= totalCost, "Insufficient payment");
+        
+        _mint(msg.sender, _tokenAmount);
+        investorShares[msg.sender] = investorShares[msg.sender].add(_tokenAmount);
+        creator.totalRaised = creator.totalRaised.add(msg.value);
+        
+        // Update demand factor
+        demandFactor = demandFactor.add(5);
+        
+        investments.push(Investment({
+            investor: msg.sender,
+            amount: msg.value,
+            tokenAmount: _tokenAmount,
+            timestamp: block.timestamp,
+            vestingPeriod: 0,
+            isSubscription: false,
+            subscriptionRate: 0
+        }));
+        
+        // Refund excess
+        if (msg.value > totalCost) {
+            payable(msg.sender).transfer(msg.value.sub(totalCost));
+        }
+        
+        emit TokensPurchased(msg.sender, _tokenAmount, totalCost, false);
+    }
+
+    function startSubscription(uint256 _monthlyRate, uint256 _durationMonths) 
+        external payable nonReentrant validInvestmentAmount {
+        require(_monthlyRate > 0, "Invalid subscription rate");
+        require(_durationMonths > 0 && _durationMonths <= 24, "Invalid duration");
+        
+        uint256 totalCost = _monthlyRate.mul(_durationMonths);
+        require(msg.value >= totalCost, "Insufficient payment for subscription");
+        
+        subscriptionEndTime[msg.sender] = block.timestamp.add(_durationMonths.mul(30 days));
+        
+        uint256 tokenAmount = totalCost.div(calculateTokenPrice());
+        _mint(msg.sender, tokenAmount);
+        investorShares[msg.sender] = investorShares[msg.sender].add(tokenAmount);
+        
+        investments.push(Investment({
+            investor: msg.sender,
+            amount: msg.value,
+            tokenAmount: tokenAmount,
+            timestamp: block.timestamp,
+            vestingPeriod: _durationMonths.mul(30 days),
+            isSubscription: true,
+            subscriptionRate: _monthlyRate
+        }));
+        
+        emit SubscriptionStarted(msg.sender, _monthlyRate, _durationMonths);
+        emit TokensPurchased(msg.sender, tokenAmount, totalCost, true);
+    }
+
+    // Advanced Revenue Distribution
+    function distributeRevenue() public onlyOwner nonReentrant {
+        require(totalRevenue > 0, "No revenue to distribute");
+        require(totalSupply() > 0, "No tokens issued");
+        
+        uint256 platformFeeAmount = totalRevenue.mul(platformFee).div(BASIS_POINTS);
+        uint256 distributionAmount = totalRevenue.sub(platformFeeAmount);
+        uint256 tokensAtSnapshot = totalSupply();
+        
+        distributionCounter = distributionCounter.add(1);
+        RevenueDistribution storage distribution = distributions[distributionCounter];
+        distribution.totalAmount = distributionAmount;
+        distribution.distributionDate = block.timestamp;
+        distribution.totalTokensAtSnapshot = tokensAtSnapshot;
+        
+        // Calculate individual claimable amounts
+        for (uint256 i = 0; i < investments.length; i++) {
+            address investor = investments[i].investor;
+            uint256 investorTokens = balanceOf(investor);
+            if (investorTokens > 0) {
+                uint256 claimable = distributionAmount.mul(investorTokens).div(tokensAtSnapshot);
+                distribution.claimableAmount[investor] = claimable;
+            }
+        }
+        
+        totalRevenue = 0; // Reset for next period
+        
+        emit RevenueDistributed(distributionCounter, distributionAmount, distributionAmount.div(tokensAtSnapshot));
+    }
+
+    function claimDistribution(uint256 _distributionId) external nonReentrant {
+        require(_distributionId <= distributionCounter, "Invalid distribution ID");
+        RevenueDistribution storage distribution = distributions[_distributionId];
+        require(!distribution.claimed[msg.sender], "Already claimed");
+        require(distribution.claimableAmount[msg.sender] > 0, "No claimable amount");
+        
+        uint256 claimAmount = distribution.claimableAmount[msg.sender];
+        distribution.claimed[msg.sender] = true;
+        
+        payable(msg.sender).transfer(claimAmount);
+    }
+
+    // Governance System
+    function createProposal(
+        string memory _title,
+        string memory _description,
+        ProposalType _type
+    ) external {
+        require(balanceOf(msg.sender) >= getMinProposalThreshold(), "Insufficient tokens to propose");
+        
+        proposalCounter = proposalCounter.add(1);
+        proposals.push(GovernanceProposal({
+            id: proposalCounter,
+            title: _title,
+            description: _description,
+            proposer: msg.sender,
+            forVotes: 0,
+            againstVotes: 0,
+            deadline: block.timestamp.add(7 days),
+            executed: false,
+            proposalType: _type
+        }));
+        
+        emit ProposalCreated(proposalCounter, msg.sender, _title);
+    }
+
+    function vote(uint256 _proposalId, bool _support, uint256 _voteCount) external {
+        require(_proposalId <= proposalCounter, "Invalid proposal");
+        require(balanceOf(msg.sender) >= _voteCount, "Insufficient tokens");
+        require(block.timestamp <= proposals[_proposalId - 1].deadline, "Voting ended");
+        
+        // Quadratic voting cost
+        uint256 voteCost = _voteCount.mul(_voteCount).div(100);
+        require(balanceOf(msg.sender) >= voteCost, "Insufficient tokens for vote cost");
+        
+        // Burn tokens for voting (quadratic cost)
+        _burn(msg.sender, voteCost);
+        
+        if (_support) {
+            proposals[_proposalId - 1].forVotes = proposals[_proposalId - 1].forVotes.add(_voteCount);
+        } else {
+            proposals[_proposalId - 1].againstVotes = proposals[_proposalId - 1].againstVotes.add(_voteCount);
+        }
+        
+        emit VoteCast(_proposalId, msg.sender, _support, _voteCount);
+    }
+
+    // Creator Tier Management
+    function updateCreatorTier() internal {
+        CreatorTier oldTier = creator.tier;
+        CreatorTier newTier = calculateTier();
+        
+        if (newTier != oldTier) {
+            creator.tier = newTier;
+            emit CreatorTierUpdated(oldTier, newTier);
+        }
+    }
+
+    function calculateTier() internal view returns (CreatorTier) {
+        uint256 score = creator.reputationScore;
+        uint256 revenue = creator.monthlyRevenue;
+        uint256 investors = getInvestorCount();
+        
+        if (score >= 900 && revenue >= 10000 && investors >= 100) return CreatorTier.PLATINUM;
+        if (score >= 750 && revenue >= 5000 && investors >= 50) return CreatorTier.GOLD;
+        if (score >= 500 && revenue >= 2000 && investors >= 20) return CreatorTier.SILVER;
+        return CreatorTier.BRONZE;
+    }
+
+    // Utility Functions
+    function calculateMonthlyRevenue() internal view returns (uint256) {
+        uint256 monthAgo = block.timestamp.sub(30 days);
+        uint256 monthlyTotal = 0;
+        
+        for (uint i = 0; i < revenueHistory.length; i++) {
+            if (revenueHistory[i].timestamp >= monthAgo) {
+                monthlyTotal = monthlyTotal.add(revenueHistory[i].amount);
+            }
+        }
+        return monthlyTotal;
+    }
+
+    function updateReputationScore(uint256 _points) internal {
+        creator.reputationScore = creator.reputationScore.add(_points);
+        updateCreatorTier();
+    }
+
+    function getDistributionThreshold() internal view returns (uint256) {
+        if (creator.tier == CreatorTier.PLATINUM) return 5 ether;
+        if (creator.tier == CreatorTier.GOLD) return 3 ether;
+        if (creator.tier == CreatorTier.SILVER) return 2 ether;
+        return 1 ether;
+    }
+
+    function getMinProposalThreshold() internal view returns (uint256) {
+        return totalSupply().div(100); // 1% of total supply
+    }
+
+    function getInvestorCount() internal view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < investments.length; i++) {
+            if (investorShares[investments[i].investor] > 0) {
+                count = count.add(1);
+            }
+        }
+        return count;
+    }
+
+    // Admin Functions
+    function addVerifier(address _verifier) external onlyOwner {
+        authorizedVerifiers[_verifier] = true;
+    }
+
+    function removeVerifier(address _verifier) external onlyOwner {
+        authorizedVerifiers[_verifier] = false;
+    }
+
+    function updatePlatformFee(uint256 _newFee) external onlyOwner {
+        require(_newFee <= 1000, "Fee too high"); // Max 10%
+        platformFee = _newFee;
+    }
+
+    function emergencyPause() external onlyOwner {
+        _pause();
+    }
+
+    function emergencyUnpause() external onlyOwner {
+        _unpause();
+    }
+
+    // View Functions
+    function getCreatorInfo() external view returns (
+        string memory name,
+        string memory bio,
+        uint256 monthlyRevenue,
+        uint256 totalRaised,
+        uint256 reputationScore,
+        CreatorTier tier,
+        bool verified
+    ) {
+        return (
+            creator.name,
+            creator.bio,
+            creator.monthlyRevenue,
+            creator.totalRaised,
+            creator.reputationScore,
+            creator.tier,
+            creator.verified
+        );
+    }
+
+    function getInvestmentHistory(address _investor) external view returns (Investment[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < investments.length; i++) {
+            if (investments[i].investor == _investor) {
+                count++;
+            }
+        }
+        
+        Investment[] memory userInvestments = new Investment[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < investments.length; i++) {
+            if (investments[i].investor == _investor) {
+                userInvestments[index] = investments[i];
+                index++;
+            }
+        }
+        return userInvestments;
+    }
+
+    function getProposalInfo(uint256 _proposalId) external view returns (
+        string memory title,
+        string memory description,
+        address proposer,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 deadline,
+        bool executed
+    ) {
+        require(_proposalId <= proposalCounter, "Invalid proposal");
+        GovernanceProposal memory proposal = proposals[_proposalId - 1];
+        return (
+            proposal.title,
+            proposal.description,
+            proposal.proposer,
+            proposal.forVotes,
+            proposal.againstVotes,
+            proposal.deadline,
+            proposal.executed
+        );
+    }
+}
