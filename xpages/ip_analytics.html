@@ -1,0 +1,4523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity Protocol - Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-lightbulb text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">IP Ingenuity</span>
+                    </a>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/dashboard" class="text-gray-600 hover:text-purple-600 font-medium">Dashboard</a>
+                    <a href="/tokenize" class="text-gray-600 hover:text-purple-600 font-medium">Tokenize IP</a>
+                    <a href="/marketplace" class="text-gray-600 hover:text-purple-600 font-medium">Marketplace</a>
+                    <a href="/analytics" class="text-purple-600 font-medium border-b-2 border-purple-600 pb-1">Analytics</a>
+                    <a href="/creatorfi.html" class="text-gray-600 hover:text-purple-600 font-medium">CreatorFi</a>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" 
+                             alt="Profile" class="w-8 h-8 rounded-full">
+                        <span class="text-sm font-medium text-gray-700">David Johnson</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-gray-900 mb-4">Analytics Dashboard</h1>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Deep insights into your IP portfolio performance and market trends
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Controls -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex flex-col lg:flex-row gap-4 items-center">
+                <!-- Time Range Selector -->
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md transition-colors" data-range="7d">7D</button>
+                    <button class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md transition-colors" data-range="30d">30D</button>
+                    <button class="px-4 py-2 bg-purple-600 text-white rounded-md transition-colors active" data-range="90d">90D</button>
+                    <button class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md transition-colors" data-range="1y">1Y</button>
+                    <button class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md transition-colors" data-range="all">All</button>
+                </div>
+                
+                <!-- Metric Selectors -->
+                <div class="flex gap-6">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" checked class="text-purple-600 rounded focus:ring-purple-500" data-metric="revenue">
+                        <span class="text-sm font-medium text-gray-700">Revenue</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" checked class="text-purple-600 rounded focus:ring-purple-500" data-metric="volume">
+                        <span class="text-sm font-medium text-gray-700">Volume</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" class="text-purple-600 rounded focus:ring-purple-500" data-metric="holders">
+                        <span class="text-sm font-medium text-gray-700">Token Holders</span>
+                    </label>
+                </div>
+                
+                <!-- Export Button -->
+                <button class="ml-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-colors" id="exportBtn">
+                    <i class="fas fa-download mr-2"></i>
+                    Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-dollar-sign text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">$127,450</div>
+                <div class="text-sm text-gray-600 mb-2">Total Revenue (90 days)</div>
+                <div class="text-sm text-green-600 font-medium">
+                    <i class="fas fa-arrow-up"></i> +18.5% vs previous period
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-users text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">1,547</div>
+                <div class="text-sm text-gray-600 mb-2">Active Token Holders</div>
+                <div class="text-sm text-green-600 font-medium">
+                    <i class="fas fa-arrow-up"></i> +23.2% new holders
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-coins text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">$847K</div>
+                <div class="text-sm text-gray-600 mb-2">Market Cap</div>
+                <div class="text-sm text-green-600 font-medium">
+                    <i class="fas fa-arrow-up"></i> +12.8% growth
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">94.2%</div>
+                <div class="text-sm text-gray-600 mb-2">Portfolio Performance</div>
+                <div class="text-sm text-green-600 font-medium">
+                    <i class="fas fa-arrow-up"></i> +2.1% improvement
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Revenue Chart -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-chart-area text-purple-600 mr-3"></i>
+                        Revenue & Volume Trends
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="h-80">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie Chart -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-pie-chart text-purple-600 mr-3"></i>
+                        Revenue by IP Type
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="h-80">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-fire text-white"></i>
+                        </div>
+                        <h4 class="ml-3 font-bold text-gray-900">Top Performing Asset</h4>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Your "AI Music Generator" patent has generated $8,450 in revenue this month, outperforming projections by 25%. Consider increasing token supply to meet growing demand.
+                    </p>
+                    <button class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-lightbulb text-white"></i>
+                        </div>
+                        <h4 class="ml-3 font-bold text-gray-900">Licensing Opportunity</h4>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        3 major streaming platforms have expressed interest in licensing your music composition algorithm. Estimated additional revenue: $15K/month.
+                    </p>
+                    <button class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-colors">
+                        Explore Deals
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-white"></i>
+                        </div>
+                        <h4 class="ml-3 font-bold text-gray-900">Market Alert</h4>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Similar patents in your category have seen 15% price increases. Consider reviewing your token pricing strategy to maximize value capture.
+                    </p>
+                    <button class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-colors">
+                        Review Pricing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Table -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-table text-purple-600 mr-3"></i>
+                    IP Asset Performance
+                </h3>
+                <input type="text" placeholder="Search assets..." 
+                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64">
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">30d Change</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Revenue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Holders</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">AI Music Generator</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Patent</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$24.50</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+12.5%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$8,450</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1,247</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Excellent</span>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Solar Panel Design</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Design</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$18.75</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+8.3%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$5,670</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">892</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Good</span>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Eco Packaging</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Patent</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$21.90</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+4.2%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$4,320</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">678</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Good</span>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Game Engine Pro</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Software</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$16.45</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+6.7%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$2,890</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">445</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Average</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000],
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Trading Volume ($)',
+                    data: [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000],
+                    borderColor: 'rgb(236, 72, 153)',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Patents', 'Copyrights', 'Trademarks', 'Software', 'Designs'],
+                datasets: [{
+                    data: [45, 25, 15, 10, 5],
+                    backgroundColor: [
+                        'rgb(147, 51, 234)',
+                        'rgb(236, 72, 153)',
+                        'rgb(34, 197, 94)',
+                        'rgb(239, 68, 68)',
+                        'rgb(245, 158, 11)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time range selector
+        document.querySelectorAll('[data-range]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-range]').forEach(b => {
+                    b.className = 'px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md transition-colors';
+                });
+                this.className = 'px-4 py-2 bg-purple-600 text-white rounded-md transition-colors active';
+                
+                const range = this.dataset.range;
+                updateChartsForTimeRange(range);
+            });
+        });
+
+        function updateChartsForTimeRange(range) {
+            let labels, revenueData, volumeData;
+            
+            switch(range) {
+                case '7d':
+                    labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    revenueData = [5000, 5500, 6000, 5800, 6200, 6800, 7200];
+                    volumeData = [3000, 3500, 4000, 3800, 4200, 4800, 5200];
+                    break;
+                case '30d':
+                    labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                    revenueData = [25000, 28000, 32000, 35000];
+                    volumeData = [18000, 21000, 24000, 27000];
+                    break;
+                case '90d':
+                default:
+                    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+                    revenueData = [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000];
+                    volumeData = [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000];
+                    break;
+                case '1y':
+                    labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+                    revenueData = [45000, 65000, 95000, 127000];
+                    volumeData = [35000, 55000, 75000, 105000];
+                    break;
+            }
+            
+            revenueChart.data.labels = labels;
+            revenueChart.data.datasets[0].data = revenueData;
+            revenueChart.data.datasets[1].data = volumeData;
+            revenueChart.update();
+        }
+
+        // Metric selector
+        document.querySelectorAll('[data-metric]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const metric = this.dataset.metric;
+                const isChecked = this.checked;
+                toggleMetricVisibility(metric, isChecked);
+            });
+        });
+
+        function toggleMetricVisibility(metric, show) {
+            if (metric === 'revenue') {
+                revenueChart.data.datasets[0].hidden = !show;
+            } else if (metric === 'volume') {
+                revenueChart.data.datasets[1].hidden = !show;
+            }
+            revenueChart.update();
+        }
+
+        // Export functionality
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Simulate file download
+                const link = document.createElement('a');
+                link.href = 'data:text/csv;charset=utf-8,Asset Name,Type,Revenue,Holders\nAI Music Generator,Patent,$8450,1247\nDigital Dreams Score,Copyright,$3200,567';
+                link.download = 'ip-analytics-report.csv';
+                link.click();
+                
+                alert('Analytics report downloaded successfully!');
+            }, 2000);
+        });
+
+        // Insight actions
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.textContent.includes('View Details') || btn.textContent.includes('Explore Deals') || btn.textContent.includes('Review Pricing')) {
+                btn.addEventListener('click', function() {
+                    const card = this.closest('.bg-white');
+                    const title = card.querySelector('h4').textContent;
+                    alert(`Opening ${title} details...`);
+                });
+            }
+        });
+
+        // Table search functionality
+        document.querySelector('input[placeholder="Search assets..."]').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const assetName = row.cells[0].textContent.toLowerCase();
+                const shouldShow = assetName.includes(query);
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        });
+
+        // Table row click handlers
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                const assetName = this.cells[0].textContent;
+                alert(`Opening detailed analytics for: ${assetName}`);
+            });
+        });
+
+        // Performance indicator click handlers
+        document.querySelectorAll('.px-3.py-1').forEach(indicator => {
+            indicator.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const performance = this.textContent;
+                const assetRow = this.closest('tr');
+                const assetName = assetRow.cells[0].textContent;
+                alert(`${assetName} performance: ${performance}\n\nClick for detailed performance metrics and recommendations.`);
+            });
+        });
+
+        // Real-time data updates
+        function updateRealTimeData() {
+            // Update KPI values with slight variations
+            const kpiValues = document.querySelectorAll('.text-3xl.font-bold');
+            kpiValues.forEach(value => {
+                const current = value.textContent;
+                if (current.includes('
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Digital Dreams Score</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Copyright</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+15.2%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3,200</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">567</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity - Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .page-header {
+            color: white;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .analytics-controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .time-range-selector {
+            display: flex;
+            gap: 10px;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 8px;
+        }
+
+        .time-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #4a5568;
+        }
+
+        .time-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .metric-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .metric-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .metric-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .kpi-icon.revenue { background: linear-gradient(45deg, #48bb78, #38a169); }
+        .kpi-icon.users { background: linear-gradient(45deg, #4299e1, #3182ce); }
+        .kpi-icon.tokens { background: linear-gradient(45deg, #ed8936, #dd6b20); }
+        .kpi-icon.performance { background: linear-gradient(45deg, #9f7aea, #805ad5); }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .kpi-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .positive { color: #48bb78; }
+        .negative { color: #f56565; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .insight-icon.trending { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .insight-icon.opportunity { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .insight-icon.warning { background: linear-gradient(45deg, #fa709a, #fee140); }
+
+        .insight-title {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .insight-content {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .insight-action {
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .insight-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .performance-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            font-weight: 700;
+            color: #2d3748;
+            background: #f7fafc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table td {
+            color: #4a5568;
+        }
+
+        .table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .performance-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .excellent { background: #c6f6d5; color: #22543d; }
+        .good { background: #bee3f8; color: #2c5282; }
+        .average { background: #fed7aa; color: #9c4221; }
+        .poor { background: #fed7d7; color: #9b2c2c; }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <nav class="nav">
+                <a href="/" class="logo">IP Ingenuity</a>
+                <ul class="nav-links">
+                    <li><a href="/dashboard">Dashboard</a></li>
+                    <li><a href="/tokenize">Tokenize IP</a></li>
+                    <li><a href="/marketplace">Marketplace</a></li>
+                    <li><a href="/analytics" class="active">Analytics</a></li>
+                    <li><a href="/creatorfi.html">CreatorFi</a></li>
+                </ul>
+                <div class="user-profile">
+                    <div class="profile-pic">DJ</div>
+                    <span>David Johnson</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </nav>
+            <div class="page-header">
+                <h1>Analytics Dashboard</h1>
+                <p>Deep insights into your IP portfolio performance and market trends</p>
+            </div>
+        </header>
+
+        <div class="analytics-controls">
+            <div class="time-range-selector">
+                <button class="time-btn" data-range="7d">7D</button>
+                <button class="time-btn" data-range="30d">30D</button>
+                <button class="time-btn active" data-range="90d">90D</button>
+                <button class="time-btn" data-range="1y">1Y</button>
+                <button class="time-btn" data-range="all">All</button>
+            </div>
+            
+            <div class="metric-selector">
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="revenue">
+                    <span>Revenue</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="volume">
+                    <span>Volume</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" data-metric="holders">
+                    <span>Token Holders</span>
+                </label>
+            </div>
+            
+            <button class="export-btn">
+                <i class="fas fa-download"></i>
+                Export Report
+            </button>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$127,450</div>
+                <div class="kpi-label">Total Revenue (90 days)</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +18.5% vs previous period
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">1,547</div>
+                <div class="kpi-label">Active Token Holders</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +23.2% new holders
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon tokens">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$847K</div>
+                <div class="kpi-label">Market Cap</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12.8% growth
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon performance">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">94.2%</div>
+                <div class="kpi-label">Portfolio Performance</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +2.1% improvement
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-area"></i>
+                    Revenue & Volume Trends
+                </h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-pie-chart"></i>
+                    Revenue by IP Type
+                </h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon trending">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="insight-title">Top Performing Asset</div>
+                </div>
+                <div class="insight-content">
+                    Your "AI Music Generator" patent has generated $8,450 in revenue this month, outperforming projections by 25%. Consider increasing token supply to meet growing demand.
+                </div>
+                <button class="insight-action">View Details</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon opportunity">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="insight-title">Licensing Opportunity</div>
+                </div>
+                <div class="insight-content">
+                    3 major streaming platforms have expressed interest in licensing your music composition algorithm. Estimated additional revenue: $15K/month.
+                </div>
+                <button class="insight-action">Explore Deals</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="insight-title">Market Alert</div>
+                </div>
+                <div class="insight-content">
+                    Similar patents in your category have seen 15% price increases. Consider reviewing your token pricing strategy to maximize value capture.
+                </div>
+                <button class="insight-action">Review Pricing</button>
+            </div>
+        </div>
+
+        <div class="performance-table">
+            <h3 class="chart-title">
+                <i class="fas fa-table"></i>
+                IP Asset Performance
+            </h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Type</th>
+                        <th>Token Price</th>
+                        <th>30d Change</th>
+                        <th>Monthly Revenue</th>
+                        <th>Holders</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI Music Generator</td>
+                        <td>Patent</td>
+                        <td>$24.50</td>
+                        <td class="positive">+12.5%</td>
+                        <td>$8,450</td>
+                        <td>1,247</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Digital Dreams Score</td>
+                        <td>Copyright</td>
+                        <td>$12.30</td>
+                        <td class="positive">+15.2%</td>
+                        <td>$3,200</td>
+                        <td>567</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Solar Panel Design</td>
+                        <td>Design</td>
+                        <td>$18.75</td>
+                        <td class="positive">+8.3%</td>
+                        <td>$5,670</td>
+                        <td>892</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Eco Packaging</td>
+                        <td>Patent</td>
+                        <td>$21.90</td>
+                        <td class="positive">+4.2%</td>
+                        <td>$4,320</td>
+                        <td>678</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Game Engine Pro</td>
+                        <td>Software</td>
+                        <td>$16.45</td>
+                        <td class="positive">+6.7%</td>
+                        <td>$2,890</td>
+                        <td>445</td>
+                        <td><span class="performance-indicator average">Average</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Chart configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000],
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Trading Volume ($)',
+                    data: [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000],
+                    borderColor: 'rgba(118, 75, 162, 1)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Patents', 'Copyrights', 'Trademarks', 'Software', 'Designs'],
+                datasets: [{
+                    data: [45, 25, 15, 10, 5],
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(72, 187, 120, 0.8)',
+                        'rgba(245, 101, 101, 0.8)',
+                        'rgba(237, 137, 54, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time range selector
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const range = this.dataset.range;
+                updateChartsForTimeRange(range);
+            });
+        });
+
+        function updateChartsForTimeRange(range) {
+            // Simulate data updates based on time range
+            let labels, revenueData, volumeData;
+            
+            switch(range) {
+                case '7d':
+                    labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    revenueData = [5000, 5500, 6000, 5800, 6200, 6800, 7200];
+                    volumeData = [3000, 3500, 4000, 3800, 4200, 4800, 5200];
+                    break;
+                case '30d':
+                    labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                    revenueData = [25000, 28000, 32000, 35000];
+                    volumeData = [18000, 21000, 24000, 27000];
+                    break;
+                case '90d':
+                default:
+                    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+                    revenueData = [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000];
+                    volumeData = [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000];
+                    break;
+                case '1y':
+                    labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+                    revenueData = [45000, 65000, 95000, 127000];
+                    volumeData = [35000, 55000, 75000, 105000];
+                    break;
+            }
+            
+            revenueChart.data.labels = labels;
+            revenueChart.data.datasets[0].data = revenueData;
+            revenueChart.data.datasets[1].data = volumeData;
+            revenueChart.update();
+        }
+
+        // Metric selector
+        document.querySelectorAll('.metric-checkbox input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const metric = this.dataset.metric;
+                const isChecked = this.checked;
+                toggleMetricVisibility(metric, isChecked);
+            });
+        });
+
+        function toggleMetricVisibility(metric, show) {
+            if (metric === 'revenue') {
+                revenueChart.data.datasets[0].hidden = !show;
+            } else if (metric === 'volume') {
+                revenueChart.data.datasets[1].hidden = !show;
+            }
+            revenueChart.update();
+        }
+
+        // Export functionality
+        document.querySelector('.export-btn').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Simulate file download
+                const link = document.createElement('a');
+                link.href = 'data:text/csv;charset=utf-8,Asset Name,Type,Revenue,Holders\nAI Music Generator,Patent,$8450,1247\nDigital Dreams Score,Copyright,$3200,567';
+                link.download = 'ip-analytics-report.csv';
+                link.click();
+                
+                alert('Analytics report downloaded successfully!');
+            }, 2000);
+        });
+
+        // Insight actions
+        document.querySelectorAll('.insight-action').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const title = this.closest('.insight-card').querySelector('.insight-title').textContent;
+                alert(`Opening ${title} details...`);
+            });
+        });
+
+        // Real-time data updates
+        function updateRealTimeData() {
+            // Update KPI values with slight variations
+            const kpiValues = document.querySelectorAll('.kpi-value');
+            kpiValues.forEach(value => {
+                const current = value.textContent;
+                if (current.includes(')) {
+                    const num = parseFloat(current.replace(/[$,]/g, ''));
+                    const change = (Math.random() - 0.5) * 1000;
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = ' + Math.round(newValue).toLocaleString();
+                } else if (current.includes('%')) {
+                    const num = parseFloat(current.replace('%', ''));
+                    const change = (Math.random() - 0.5) * 2;
+                    const newValue = Math.max(0, Math.min(100, num + change));
+                    value.textContent = newValue.toFixed(1) + '%';
+                } else if (!isNaN(parseFloat(current.replace(',', '')))) {
+                    const num = parseFloat(current.replace(',', ''));
+                    const change = Math.floor((Math.random() - 0.5) * 20);
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = newValue.toLocaleString();
+                }
+            });
+        }
+
+        // Update data every 30 seconds
+        setInterval(updateRealTimeData, 30000);
+
+        // Table row hover effects
+        document.querySelectorAll('.table tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                const assetName = this.cells[0].textContent;
+                alert(`Opening detailed analytics for: ${assetName}`);
+            });
+        });
+
+        // Initialize tooltips and interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects to charts
+            const chartCards = document.querySelectorAll('.chart-card');
+            chartCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                });
+            });
+
+            // Add loading animation for KPI cards
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Advanced filtering for performance table
+        function filterTable(column, value) {
+            const rows = document.querySelectorAll('.table tbody tr');
+            rows.forEach(row => {
+                const cellValue = row.cells[column].textContent.toLowerCase();
+                const shouldShow = cellValue.includes(value.toLowerCase());
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+
+        // Add search functionality for table
+        const tableHeader = document.querySelector('.performance-table .chart-title');
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search assets...';
+        searchInput.style.cssText = `
+            margin-left: auto;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        `;
+        
+        searchInput.addEventListener('input', function() {
+            filterTable(0, this.value); // Filter by asset name (column 0)
+        });
+        
+        tableHeader.appendChild(searchInput);
+
+        // Performance indicators click handlers
+        document.querySelectorAll('.performance-indicator').forEach(indicator => {
+            indicator.addEventListener('click', function() {
+                const performance = this.textContent;
+                const assetRow = this.closest('tr');
+                const assetName = assetRow.cells[0].textContent;
+                alert(`${assetName} performance: ${performance}\n\nClick for detailed performance metrics and recommendations.`);
+            });
+        });
+
+        // Chart data refresh functionality
+        function refreshChartData() {
+            // Simulate new data points
+            const newRevenuePoint = Math.floor(Math.random() * 10000) + 35000;
+            const newVolumePoint = Math.floor(Math.random() * 8000) + 25000;
+            
+            // Add new data point and remove oldest
+            revenueChart.data.datasets[0].data.push(newRevenuePoint);
+            revenueChart.data.datasets[1].data.push(newVolumePoint);
+            
+            if (revenueChart.data.datasets[0].data.length > 12) {
+                revenueChart.data.datasets[0].data.shift();
+                revenueChart.data.datasets[1].data.shift();
+                revenueChart.data.labels.shift();
+            }
+            
+            // Add new label
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const currentMonth = new Date().getMonth();
+            revenueChart.data.labels.push(months[currentMonth]);
+            
+            revenueChart.update('none'); // Update without animation for smooth real-time feel
+        }
+
+        // Refresh chart data every 2 minutes for demo
+        setInterval(refreshChartData, 120000);
+    </script>
+</body>
+</html>)) {
+                    const num = parseFloat(current.replace(/[$,K]/g, ''));
+                    const change = (Math.random() - 0.5) * 1000;
+                    const newValue = Math.max(0, num + change);
+                    if (current.includes('K')) {
+                        value.textContent = '
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Digital Dreams Score</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Copyright</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+15.2%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3,200</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">567</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity - Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .page-header {
+            color: white;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .analytics-controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .time-range-selector {
+            display: flex;
+            gap: 10px;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 8px;
+        }
+
+        .time-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #4a5568;
+        }
+
+        .time-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .metric-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .metric-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .metric-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .kpi-icon.revenue { background: linear-gradient(45deg, #48bb78, #38a169); }
+        .kpi-icon.users { background: linear-gradient(45deg, #4299e1, #3182ce); }
+        .kpi-icon.tokens { background: linear-gradient(45deg, #ed8936, #dd6b20); }
+        .kpi-icon.performance { background: linear-gradient(45deg, #9f7aea, #805ad5); }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .kpi-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .positive { color: #48bb78; }
+        .negative { color: #f56565; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .insight-icon.trending { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .insight-icon.opportunity { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .insight-icon.warning { background: linear-gradient(45deg, #fa709a, #fee140); }
+
+        .insight-title {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .insight-content {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .insight-action {
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .insight-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .performance-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            font-weight: 700;
+            color: #2d3748;
+            background: #f7fafc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table td {
+            color: #4a5568;
+        }
+
+        .table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .performance-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .excellent { background: #c6f6d5; color: #22543d; }
+        .good { background: #bee3f8; color: #2c5282; }
+        .average { background: #fed7aa; color: #9c4221; }
+        .poor { background: #fed7d7; color: #9b2c2c; }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <nav class="nav">
+                <a href="/" class="logo">IP Ingenuity</a>
+                <ul class="nav-links">
+                    <li><a href="/dashboard">Dashboard</a></li>
+                    <li><a href="/tokenize">Tokenize IP</a></li>
+                    <li><a href="/marketplace">Marketplace</a></li>
+                    <li><a href="/analytics" class="active">Analytics</a></li>
+                    <li><a href="/creatorfi.html">CreatorFi</a></li>
+                </ul>
+                <div class="user-profile">
+                    <div class="profile-pic">DJ</div>
+                    <span>David Johnson</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </nav>
+            <div class="page-header">
+                <h1>Analytics Dashboard</h1>
+                <p>Deep insights into your IP portfolio performance and market trends</p>
+            </div>
+        </header>
+
+        <div class="analytics-controls">
+            <div class="time-range-selector">
+                <button class="time-btn" data-range="7d">7D</button>
+                <button class="time-btn" data-range="30d">30D</button>
+                <button class="time-btn active" data-range="90d">90D</button>
+                <button class="time-btn" data-range="1y">1Y</button>
+                <button class="time-btn" data-range="all">All</button>
+            </div>
+            
+            <div class="metric-selector">
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="revenue">
+                    <span>Revenue</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="volume">
+                    <span>Volume</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" data-metric="holders">
+                    <span>Token Holders</span>
+                </label>
+            </div>
+            
+            <button class="export-btn">
+                <i class="fas fa-download"></i>
+                Export Report
+            </button>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$127,450</div>
+                <div class="kpi-label">Total Revenue (90 days)</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +18.5% vs previous period
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">1,547</div>
+                <div class="kpi-label">Active Token Holders</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +23.2% new holders
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon tokens">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$847K</div>
+                <div class="kpi-label">Market Cap</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12.8% growth
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon performance">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">94.2%</div>
+                <div class="kpi-label">Portfolio Performance</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +2.1% improvement
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-area"></i>
+                    Revenue & Volume Trends
+                </h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-pie-chart"></i>
+                    Revenue by IP Type
+                </h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon trending">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="insight-title">Top Performing Asset</div>
+                </div>
+                <div class="insight-content">
+                    Your "AI Music Generator" patent has generated $8,450 in revenue this month, outperforming projections by 25%. Consider increasing token supply to meet growing demand.
+                </div>
+                <button class="insight-action">View Details</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon opportunity">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="insight-title">Licensing Opportunity</div>
+                </div>
+                <div class="insight-content">
+                    3 major streaming platforms have expressed interest in licensing your music composition algorithm. Estimated additional revenue: $15K/month.
+                </div>
+                <button class="insight-action">Explore Deals</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="insight-title">Market Alert</div>
+                </div>
+                <div class="insight-content">
+                    Similar patents in your category have seen 15% price increases. Consider reviewing your token pricing strategy to maximize value capture.
+                </div>
+                <button class="insight-action">Review Pricing</button>
+            </div>
+        </div>
+
+        <div class="performance-table">
+            <h3 class="chart-title">
+                <i class="fas fa-table"></i>
+                IP Asset Performance
+            </h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Type</th>
+                        <th>Token Price</th>
+                        <th>30d Change</th>
+                        <th>Monthly Revenue</th>
+                        <th>Holders</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI Music Generator</td>
+                        <td>Patent</td>
+                        <td>$24.50</td>
+                        <td class="positive">+12.5%</td>
+                        <td>$8,450</td>
+                        <td>1,247</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Digital Dreams Score</td>
+                        <td>Copyright</td>
+                        <td>$12.30</td>
+                        <td class="positive">+15.2%</td>
+                        <td>$3,200</td>
+                        <td>567</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Solar Panel Design</td>
+                        <td>Design</td>
+                        <td>$18.75</td>
+                        <td class="positive">+8.3%</td>
+                        <td>$5,670</td>
+                        <td>892</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Eco Packaging</td>
+                        <td>Patent</td>
+                        <td>$21.90</td>
+                        <td class="positive">+4.2%</td>
+                        <td>$4,320</td>
+                        <td>678</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Game Engine Pro</td>
+                        <td>Software</td>
+                        <td>$16.45</td>
+                        <td class="positive">+6.7%</td>
+                        <td>$2,890</td>
+                        <td>445</td>
+                        <td><span class="performance-indicator average">Average</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Chart configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000],
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Trading Volume ($)',
+                    data: [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000],
+                    borderColor: 'rgba(118, 75, 162, 1)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Patents', 'Copyrights', 'Trademarks', 'Software', 'Designs'],
+                datasets: [{
+                    data: [45, 25, 15, 10, 5],
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(72, 187, 120, 0.8)',
+                        'rgba(245, 101, 101, 0.8)',
+                        'rgba(237, 137, 54, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time range selector
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const range = this.dataset.range;
+                updateChartsForTimeRange(range);
+            });
+        });
+
+        function updateChartsForTimeRange(range) {
+            // Simulate data updates based on time range
+            let labels, revenueData, volumeData;
+            
+            switch(range) {
+                case '7d':
+                    labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    revenueData = [5000, 5500, 6000, 5800, 6200, 6800, 7200];
+                    volumeData = [3000, 3500, 4000, 3800, 4200, 4800, 5200];
+                    break;
+                case '30d':
+                    labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                    revenueData = [25000, 28000, 32000, 35000];
+                    volumeData = [18000, 21000, 24000, 27000];
+                    break;
+                case '90d':
+                default:
+                    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+                    revenueData = [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000];
+                    volumeData = [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000];
+                    break;
+                case '1y':
+                    labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+                    revenueData = [45000, 65000, 95000, 127000];
+                    volumeData = [35000, 55000, 75000, 105000];
+                    break;
+            }
+            
+            revenueChart.data.labels = labels;
+            revenueChart.data.datasets[0].data = revenueData;
+            revenueChart.data.datasets[1].data = volumeData;
+            revenueChart.update();
+        }
+
+        // Metric selector
+        document.querySelectorAll('.metric-checkbox input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const metric = this.dataset.metric;
+                const isChecked = this.checked;
+                toggleMetricVisibility(metric, isChecked);
+            });
+        });
+
+        function toggleMetricVisibility(metric, show) {
+            if (metric === 'revenue') {
+                revenueChart.data.datasets[0].hidden = !show;
+            } else if (metric === 'volume') {
+                revenueChart.data.datasets[1].hidden = !show;
+            }
+            revenueChart.update();
+        }
+
+        // Export functionality
+        document.querySelector('.export-btn').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Simulate file download
+                const link = document.createElement('a');
+                link.href = 'data:text/csv;charset=utf-8,Asset Name,Type,Revenue,Holders\nAI Music Generator,Patent,$8450,1247\nDigital Dreams Score,Copyright,$3200,567';
+                link.download = 'ip-analytics-report.csv';
+                link.click();
+                
+                alert('Analytics report downloaded successfully!');
+            }, 2000);
+        });
+
+        // Insight actions
+        document.querySelectorAll('.insight-action').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const title = this.closest('.insight-card').querySelector('.insight-title').textContent;
+                alert(`Opening ${title} details...`);
+            });
+        });
+
+        // Real-time data updates
+        function updateRealTimeData() {
+            // Update KPI values with slight variations
+            const kpiValues = document.querySelectorAll('.kpi-value');
+            kpiValues.forEach(value => {
+                const current = value.textContent;
+                if (current.includes(')) {
+                    const num = parseFloat(current.replace(/[$,]/g, ''));
+                    const change = (Math.random() - 0.5) * 1000;
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = ' + Math.round(newValue).toLocaleString();
+                } else if (current.includes('%')) {
+                    const num = parseFloat(current.replace('%', ''));
+                    const change = (Math.random() - 0.5) * 2;
+                    const newValue = Math.max(0, Math.min(100, num + change));
+                    value.textContent = newValue.toFixed(1) + '%';
+                } else if (!isNaN(parseFloat(current.replace(',', '')))) {
+                    const num = parseFloat(current.replace(',', ''));
+                    const change = Math.floor((Math.random() - 0.5) * 20);
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = newValue.toLocaleString();
+                }
+            });
+        }
+
+        // Update data every 30 seconds
+        setInterval(updateRealTimeData, 30000);
+
+        // Table row hover effects
+        document.querySelectorAll('.table tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                const assetName = this.cells[0].textContent;
+                alert(`Opening detailed analytics for: ${assetName}`);
+            });
+        });
+
+        // Initialize tooltips and interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects to charts
+            const chartCards = document.querySelectorAll('.chart-card');
+            chartCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                });
+            });
+
+            // Add loading animation for KPI cards
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Advanced filtering for performance table
+        function filterTable(column, value) {
+            const rows = document.querySelectorAll('.table tbody tr');
+            rows.forEach(row => {
+                const cellValue = row.cells[column].textContent.toLowerCase();
+                const shouldShow = cellValue.includes(value.toLowerCase());
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+
+        // Add search functionality for table
+        const tableHeader = document.querySelector('.performance-table .chart-title');
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search assets...';
+        searchInput.style.cssText = `
+            margin-left: auto;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        `;
+        
+        searchInput.addEventListener('input', function() {
+            filterTable(0, this.value); // Filter by asset name (column 0)
+        });
+        
+        tableHeader.appendChild(searchInput);
+
+        // Performance indicators click handlers
+        document.querySelectorAll('.performance-indicator').forEach(indicator => {
+            indicator.addEventListener('click', function() {
+                const performance = this.textContent;
+                const assetRow = this.closest('tr');
+                const assetName = assetRow.cells[0].textContent;
+                alert(`${assetName} performance: ${performance}\n\nClick for detailed performance metrics and recommendations.`);
+            });
+        });
+
+        // Chart data refresh functionality
+        function refreshChartData() {
+            // Simulate new data points
+            const newRevenuePoint = Math.floor(Math.random() * 10000) + 35000;
+            const newVolumePoint = Math.floor(Math.random() * 8000) + 25000;
+            
+            // Add new data point and remove oldest
+            revenueChart.data.datasets[0].data.push(newRevenuePoint);
+            revenueChart.data.datasets[1].data.push(newVolumePoint);
+            
+            if (revenueChart.data.datasets[0].data.length > 12) {
+                revenueChart.data.datasets[0].data.shift();
+                revenueChart.data.datasets[1].data.shift();
+                revenueChart.data.labels.shift();
+            }
+            
+            // Add new label
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const currentMonth = new Date().getMonth();
+            revenueChart.data.labels.push(months[currentMonth]);
+            
+            revenueChart.update('none'); // Update without animation for smooth real-time feel
+        }
+
+        // Refresh chart data every 2 minutes for demo
+        setInterval(refreshChartData, 120000);
+    </script>
+</body>
+</html> + Math.round(newValue) + 'K';
+                    } else {
+                        value.textContent = '
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Digital Dreams Score</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Copyright</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+15.2%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3,200</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">567</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity - Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .page-header {
+            color: white;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .analytics-controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .time-range-selector {
+            display: flex;
+            gap: 10px;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 8px;
+        }
+
+        .time-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #4a5568;
+        }
+
+        .time-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .metric-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .metric-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .metric-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .kpi-icon.revenue { background: linear-gradient(45deg, #48bb78, #38a169); }
+        .kpi-icon.users { background: linear-gradient(45deg, #4299e1, #3182ce); }
+        .kpi-icon.tokens { background: linear-gradient(45deg, #ed8936, #dd6b20); }
+        .kpi-icon.performance { background: linear-gradient(45deg, #9f7aea, #805ad5); }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .kpi-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .positive { color: #48bb78; }
+        .negative { color: #f56565; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .insight-icon.trending { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .insight-icon.opportunity { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .insight-icon.warning { background: linear-gradient(45deg, #fa709a, #fee140); }
+
+        .insight-title {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .insight-content {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .insight-action {
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .insight-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .performance-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            font-weight: 700;
+            color: #2d3748;
+            background: #f7fafc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table td {
+            color: #4a5568;
+        }
+
+        .table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .performance-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .excellent { background: #c6f6d5; color: #22543d; }
+        .good { background: #bee3f8; color: #2c5282; }
+        .average { background: #fed7aa; color: #9c4221; }
+        .poor { background: #fed7d7; color: #9b2c2c; }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <nav class="nav">
+                <a href="/" class="logo">IP Ingenuity</a>
+                <ul class="nav-links">
+                    <li><a href="/dashboard">Dashboard</a></li>
+                    <li><a href="/tokenize">Tokenize IP</a></li>
+                    <li><a href="/marketplace">Marketplace</a></li>
+                    <li><a href="/analytics" class="active">Analytics</a></li>
+                    <li><a href="/creatorfi.html">CreatorFi</a></li>
+                </ul>
+                <div class="user-profile">
+                    <div class="profile-pic">DJ</div>
+                    <span>David Johnson</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </nav>
+            <div class="page-header">
+                <h1>Analytics Dashboard</h1>
+                <p>Deep insights into your IP portfolio performance and market trends</p>
+            </div>
+        </header>
+
+        <div class="analytics-controls">
+            <div class="time-range-selector">
+                <button class="time-btn" data-range="7d">7D</button>
+                <button class="time-btn" data-range="30d">30D</button>
+                <button class="time-btn active" data-range="90d">90D</button>
+                <button class="time-btn" data-range="1y">1Y</button>
+                <button class="time-btn" data-range="all">All</button>
+            </div>
+            
+            <div class="metric-selector">
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="revenue">
+                    <span>Revenue</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="volume">
+                    <span>Volume</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" data-metric="holders">
+                    <span>Token Holders</span>
+                </label>
+            </div>
+            
+            <button class="export-btn">
+                <i class="fas fa-download"></i>
+                Export Report
+            </button>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$127,450</div>
+                <div class="kpi-label">Total Revenue (90 days)</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +18.5% vs previous period
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">1,547</div>
+                <div class="kpi-label">Active Token Holders</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +23.2% new holders
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon tokens">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$847K</div>
+                <div class="kpi-label">Market Cap</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12.8% growth
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon performance">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">94.2%</div>
+                <div class="kpi-label">Portfolio Performance</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +2.1% improvement
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-area"></i>
+                    Revenue & Volume Trends
+                </h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-pie-chart"></i>
+                    Revenue by IP Type
+                </h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon trending">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="insight-title">Top Performing Asset</div>
+                </div>
+                <div class="insight-content">
+                    Your "AI Music Generator" patent has generated $8,450 in revenue this month, outperforming projections by 25%. Consider increasing token supply to meet growing demand.
+                </div>
+                <button class="insight-action">View Details</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon opportunity">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="insight-title">Licensing Opportunity</div>
+                </div>
+                <div class="insight-content">
+                    3 major streaming platforms have expressed interest in licensing your music composition algorithm. Estimated additional revenue: $15K/month.
+                </div>
+                <button class="insight-action">Explore Deals</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="insight-title">Market Alert</div>
+                </div>
+                <div class="insight-content">
+                    Similar patents in your category have seen 15% price increases. Consider reviewing your token pricing strategy to maximize value capture.
+                </div>
+                <button class="insight-action">Review Pricing</button>
+            </div>
+        </div>
+
+        <div class="performance-table">
+            <h3 class="chart-title">
+                <i class="fas fa-table"></i>
+                IP Asset Performance
+            </h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Type</th>
+                        <th>Token Price</th>
+                        <th>30d Change</th>
+                        <th>Monthly Revenue</th>
+                        <th>Holders</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI Music Generator</td>
+                        <td>Patent</td>
+                        <td>$24.50</td>
+                        <td class="positive">+12.5%</td>
+                        <td>$8,450</td>
+                        <td>1,247</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Digital Dreams Score</td>
+                        <td>Copyright</td>
+                        <td>$12.30</td>
+                        <td class="positive">+15.2%</td>
+                        <td>$3,200</td>
+                        <td>567</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Solar Panel Design</td>
+                        <td>Design</td>
+                        <td>$18.75</td>
+                        <td class="positive">+8.3%</td>
+                        <td>$5,670</td>
+                        <td>892</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Eco Packaging</td>
+                        <td>Patent</td>
+                        <td>$21.90</td>
+                        <td class="positive">+4.2%</td>
+                        <td>$4,320</td>
+                        <td>678</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Game Engine Pro</td>
+                        <td>Software</td>
+                        <td>$16.45</td>
+                        <td class="positive">+6.7%</td>
+                        <td>$2,890</td>
+                        <td>445</td>
+                        <td><span class="performance-indicator average">Average</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Chart configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000],
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Trading Volume ($)',
+                    data: [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000],
+                    borderColor: 'rgba(118, 75, 162, 1)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Patents', 'Copyrights', 'Trademarks', 'Software', 'Designs'],
+                datasets: [{
+                    data: [45, 25, 15, 10, 5],
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(72, 187, 120, 0.8)',
+                        'rgba(245, 101, 101, 0.8)',
+                        'rgba(237, 137, 54, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time range selector
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const range = this.dataset.range;
+                updateChartsForTimeRange(range);
+            });
+        });
+
+        function updateChartsForTimeRange(range) {
+            // Simulate data updates based on time range
+            let labels, revenueData, volumeData;
+            
+            switch(range) {
+                case '7d':
+                    labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    revenueData = [5000, 5500, 6000, 5800, 6200, 6800, 7200];
+                    volumeData = [3000, 3500, 4000, 3800, 4200, 4800, 5200];
+                    break;
+                case '30d':
+                    labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                    revenueData = [25000, 28000, 32000, 35000];
+                    volumeData = [18000, 21000, 24000, 27000];
+                    break;
+                case '90d':
+                default:
+                    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+                    revenueData = [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000];
+                    volumeData = [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000];
+                    break;
+                case '1y':
+                    labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+                    revenueData = [45000, 65000, 95000, 127000];
+                    volumeData = [35000, 55000, 75000, 105000];
+                    break;
+            }
+            
+            revenueChart.data.labels = labels;
+            revenueChart.data.datasets[0].data = revenueData;
+            revenueChart.data.datasets[1].data = volumeData;
+            revenueChart.update();
+        }
+
+        // Metric selector
+        document.querySelectorAll('.metric-checkbox input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const metric = this.dataset.metric;
+                const isChecked = this.checked;
+                toggleMetricVisibility(metric, isChecked);
+            });
+        });
+
+        function toggleMetricVisibility(metric, show) {
+            if (metric === 'revenue') {
+                revenueChart.data.datasets[0].hidden = !show;
+            } else if (metric === 'volume') {
+                revenueChart.data.datasets[1].hidden = !show;
+            }
+            revenueChart.update();
+        }
+
+        // Export functionality
+        document.querySelector('.export-btn').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Simulate file download
+                const link = document.createElement('a');
+                link.href = 'data:text/csv;charset=utf-8,Asset Name,Type,Revenue,Holders\nAI Music Generator,Patent,$8450,1247\nDigital Dreams Score,Copyright,$3200,567';
+                link.download = 'ip-analytics-report.csv';
+                link.click();
+                
+                alert('Analytics report downloaded successfully!');
+            }, 2000);
+        });
+
+        // Insight actions
+        document.querySelectorAll('.insight-action').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const title = this.closest('.insight-card').querySelector('.insight-title').textContent;
+                alert(`Opening ${title} details...`);
+            });
+        });
+
+        // Real-time data updates
+        function updateRealTimeData() {
+            // Update KPI values with slight variations
+            const kpiValues = document.querySelectorAll('.kpi-value');
+            kpiValues.forEach(value => {
+                const current = value.textContent;
+                if (current.includes(')) {
+                    const num = parseFloat(current.replace(/[$,]/g, ''));
+                    const change = (Math.random() - 0.5) * 1000;
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = ' + Math.round(newValue).toLocaleString();
+                } else if (current.includes('%')) {
+                    const num = parseFloat(current.replace('%', ''));
+                    const change = (Math.random() - 0.5) * 2;
+                    const newValue = Math.max(0, Math.min(100, num + change));
+                    value.textContent = newValue.toFixed(1) + '%';
+                } else if (!isNaN(parseFloat(current.replace(',', '')))) {
+                    const num = parseFloat(current.replace(',', ''));
+                    const change = Math.floor((Math.random() - 0.5) * 20);
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = newValue.toLocaleString();
+                }
+            });
+        }
+
+        // Update data every 30 seconds
+        setInterval(updateRealTimeData, 30000);
+
+        // Table row hover effects
+        document.querySelectorAll('.table tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                const assetName = this.cells[0].textContent;
+                alert(`Opening detailed analytics for: ${assetName}`);
+            });
+        });
+
+        // Initialize tooltips and interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects to charts
+            const chartCards = document.querySelectorAll('.chart-card');
+            chartCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                });
+            });
+
+            // Add loading animation for KPI cards
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Advanced filtering for performance table
+        function filterTable(column, value) {
+            const rows = document.querySelectorAll('.table tbody tr');
+            rows.forEach(row => {
+                const cellValue = row.cells[column].textContent.toLowerCase();
+                const shouldShow = cellValue.includes(value.toLowerCase());
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+
+        // Add search functionality for table
+        const tableHeader = document.querySelector('.performance-table .chart-title');
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search assets...';
+        searchInput.style.cssText = `
+            margin-left: auto;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        `;
+        
+        searchInput.addEventListener('input', function() {
+            filterTable(0, this.value); // Filter by asset name (column 0)
+        });
+        
+        tableHeader.appendChild(searchInput);
+
+        // Performance indicators click handlers
+        document.querySelectorAll('.performance-indicator').forEach(indicator => {
+            indicator.addEventListener('click', function() {
+                const performance = this.textContent;
+                const assetRow = this.closest('tr');
+                const assetName = assetRow.cells[0].textContent;
+                alert(`${assetName} performance: ${performance}\n\nClick for detailed performance metrics and recommendations.`);
+            });
+        });
+
+        // Chart data refresh functionality
+        function refreshChartData() {
+            // Simulate new data points
+            const newRevenuePoint = Math.floor(Math.random() * 10000) + 35000;
+            const newVolumePoint = Math.floor(Math.random() * 8000) + 25000;
+            
+            // Add new data point and remove oldest
+            revenueChart.data.datasets[0].data.push(newRevenuePoint);
+            revenueChart.data.datasets[1].data.push(newVolumePoint);
+            
+            if (revenueChart.data.datasets[0].data.length > 12) {
+                revenueChart.data.datasets[0].data.shift();
+                revenueChart.data.datasets[1].data.shift();
+                revenueChart.data.labels.shift();
+            }
+            
+            // Add new label
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const currentMonth = new Date().getMonth();
+            revenueChart.data.labels.push(months[currentMonth]);
+            
+            revenueChart.update('none'); // Update without animation for smooth real-time feel
+        }
+
+        // Refresh chart data every 2 minutes for demo
+        setInterval(refreshChartData, 120000);
+    </script>
+</body>
+</html> + Math.round(newValue).toLocaleString();
+                    }
+                } else if (current.includes('%')) {
+                    const num = parseFloat(current.replace('%', ''));
+                    const change = (Math.random() - 0.5) * 2;
+                    const newValue = Math.max(0, Math.min(100, num + change));
+                    value.textContent = newValue.toFixed(1) + '%';
+                } else if (!isNaN(parseFloat(current.replace(',', '')))) {
+                    const num = parseFloat(current.replace(',', ''));
+                    const change = Math.floor((Math.random() - 0.5) * 20);
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = newValue.toLocaleString();
+                }
+            });
+        }
+
+        // Update data every 30 seconds
+        setInterval(updateRealTimeData, 30000);
+    </script>
+</body>
+</html>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Digital Dreams Score</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Copyright</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+15.2%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3,200</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">567</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Ingenuity - Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .page-header {
+            color: white;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .analytics-controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .time-range-selector {
+            display: flex;
+            gap: 10px;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 8px;
+        }
+
+        .time-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #4a5568;
+        }
+
+        .time-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .metric-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .metric-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .metric-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .kpi-icon.revenue { background: linear-gradient(45deg, #48bb78, #38a169); }
+        .kpi-icon.users { background: linear-gradient(45deg, #4299e1, #3182ce); }
+        .kpi-icon.tokens { background: linear-gradient(45deg, #ed8936, #dd6b20); }
+        .kpi-icon.performance { background: linear-gradient(45deg, #9f7aea, #805ad5); }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .kpi-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .positive { color: #48bb78; }
+        .negative { color: #f56565; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .insight-icon.trending { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .insight-icon.opportunity { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .insight-icon.warning { background: linear-gradient(45deg, #fa709a, #fee140); }
+
+        .insight-title {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .insight-content {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .insight-action {
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .insight-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .performance-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            font-weight: 700;
+            color: #2d3748;
+            background: #f7fafc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table td {
+            color: #4a5568;
+        }
+
+        .table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .performance-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .excellent { background: #c6f6d5; color: #22543d; }
+        .good { background: #bee3f8; color: #2c5282; }
+        .average { background: #fed7aa; color: #9c4221; }
+        .poor { background: #fed7d7; color: #9b2c2c; }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <nav class="nav">
+                <a href="/" class="logo">IP Ingenuity</a>
+                <ul class="nav-links">
+                    <li><a href="/dashboard">Dashboard</a></li>
+                    <li><a href="/tokenize">Tokenize IP</a></li>
+                    <li><a href="/marketplace">Marketplace</a></li>
+                    <li><a href="/analytics" class="active">Analytics</a></li>
+                    <li><a href="/creatorfi.html">CreatorFi</a></li>
+                </ul>
+                <div class="user-profile">
+                    <div class="profile-pic">DJ</div>
+                    <span>David Johnson</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </nav>
+            <div class="page-header">
+                <h1>Analytics Dashboard</h1>
+                <p>Deep insights into your IP portfolio performance and market trends</p>
+            </div>
+        </header>
+
+        <div class="analytics-controls">
+            <div class="time-range-selector">
+                <button class="time-btn" data-range="7d">7D</button>
+                <button class="time-btn" data-range="30d">30D</button>
+                <button class="time-btn active" data-range="90d">90D</button>
+                <button class="time-btn" data-range="1y">1Y</button>
+                <button class="time-btn" data-range="all">All</button>
+            </div>
+            
+            <div class="metric-selector">
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="revenue">
+                    <span>Revenue</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" checked data-metric="volume">
+                    <span>Volume</span>
+                </label>
+                <label class="metric-checkbox">
+                    <input type="checkbox" data-metric="holders">
+                    <span>Token Holders</span>
+                </label>
+            </div>
+            
+            <button class="export-btn">
+                <i class="fas fa-download"></i>
+                Export Report
+            </button>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$127,450</div>
+                <div class="kpi-label">Total Revenue (90 days)</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +18.5% vs previous period
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">1,547</div>
+                <div class="kpi-label">Active Token Holders</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +23.2% new holders
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon tokens">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">$847K</div>
+                <div class="kpi-label">Market Cap</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12.8% growth
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon performance">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">94.2%</div>
+                <div class="kpi-label">Portfolio Performance</div>
+                <div class="kpi-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +2.1% improvement
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-area"></i>
+                    Revenue & Volume Trends
+                </h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-pie-chart"></i>
+                    Revenue by IP Type
+                </h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon trending">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="insight-title">Top Performing Asset</div>
+                </div>
+                <div class="insight-content">
+                    Your "AI Music Generator" patent has generated $8,450 in revenue this month, outperforming projections by 25%. Consider increasing token supply to meet growing demand.
+                </div>
+                <button class="insight-action">View Details</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon opportunity">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="insight-title">Licensing Opportunity</div>
+                </div>
+                <div class="insight-content">
+                    3 major streaming platforms have expressed interest in licensing your music composition algorithm. Estimated additional revenue: $15K/month.
+                </div>
+                <button class="insight-action">Explore Deals</button>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="insight-title">Market Alert</div>
+                </div>
+                <div class="insight-content">
+                    Similar patents in your category have seen 15% price increases. Consider reviewing your token pricing strategy to maximize value capture.
+                </div>
+                <button class="insight-action">Review Pricing</button>
+            </div>
+        </div>
+
+        <div class="performance-table">
+            <h3 class="chart-title">
+                <i class="fas fa-table"></i>
+                IP Asset Performance
+            </h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Type</th>
+                        <th>Token Price</th>
+                        <th>30d Change</th>
+                        <th>Monthly Revenue</th>
+                        <th>Holders</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI Music Generator</td>
+                        <td>Patent</td>
+                        <td>$24.50</td>
+                        <td class="positive">+12.5%</td>
+                        <td>$8,450</td>
+                        <td>1,247</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Digital Dreams Score</td>
+                        <td>Copyright</td>
+                        <td>$12.30</td>
+                        <td class="positive">+15.2%</td>
+                        <td>$3,200</td>
+                        <td>567</td>
+                        <td><span class="performance-indicator excellent">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Solar Panel Design</td>
+                        <td>Design</td>
+                        <td>$18.75</td>
+                        <td class="positive">+8.3%</td>
+                        <td>$5,670</td>
+                        <td>892</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Eco Packaging</td>
+                        <td>Patent</td>
+                        <td>$21.90</td>
+                        <td class="positive">+4.2%</td>
+                        <td>$4,320</td>
+                        <td>678</td>
+                        <td><span class="performance-indicator good">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Game Engine Pro</td>
+                        <td>Software</td>
+                        <td>$16.45</td>
+                        <td class="positive">+6.7%</td>
+                        <td>$2,890</td>
+                        <td>445</td>
+                        <td><span class="performance-indicator average">Average</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Chart configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000],
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Trading Volume ($)',
+                    data: [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000],
+                    borderColor: 'rgba(118, 75, 162, 1)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Patents', 'Copyrights', 'Trademarks', 'Software', 'Designs'],
+                datasets: [{
+                    data: [45, 25, 15, 10, 5],
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(72, 187, 120, 0.8)',
+                        'rgba(245, 101, 101, 0.8)',
+                        'rgba(237, 137, 54, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time range selector
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const range = this.dataset.range;
+                updateChartsForTimeRange(range);
+            });
+        });
+
+        function updateChartsForTimeRange(range) {
+            // Simulate data updates based on time range
+            let labels, revenueData, volumeData;
+            
+            switch(range) {
+                case '7d':
+                    labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    revenueData = [5000, 5500, 6000, 5800, 6200, 6800, 7200];
+                    volumeData = [3000, 3500, 4000, 3800, 4200, 4800, 5200];
+                    break;
+                case '30d':
+                    labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                    revenueData = [25000, 28000, 32000, 35000];
+                    volumeData = [18000, 21000, 24000, 27000];
+                    break;
+                case '90d':
+                default:
+                    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+                    revenueData = [12000, 15000, 18000, 22000, 25000, 28000, 32000, 35000, 42000];
+                    volumeData = [8000, 12000, 15000, 18000, 21000, 24000, 27000, 30000, 35000];
+                    break;
+                case '1y':
+                    labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+                    revenueData = [45000, 65000, 95000, 127000];
+                    volumeData = [35000, 55000, 75000, 105000];
+                    break;
+            }
+            
+            revenueChart.data.labels = labels;
+            revenueChart.data.datasets[0].data = revenueData;
+            revenueChart.data.datasets[1].data = volumeData;
+            revenueChart.update();
+        }
+
+        // Metric selector
+        document.querySelectorAll('.metric-checkbox input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const metric = this.dataset.metric;
+                const isChecked = this.checked;
+                toggleMetricVisibility(metric, isChecked);
+            });
+        });
+
+        function toggleMetricVisibility(metric, show) {
+            if (metric === 'revenue') {
+                revenueChart.data.datasets[0].hidden = !show;
+            } else if (metric === 'volume') {
+                revenueChart.data.datasets[1].hidden = !show;
+            }
+            revenueChart.update();
+        }
+
+        // Export functionality
+        document.querySelector('.export-btn').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Simulate file download
+                const link = document.createElement('a');
+                link.href = 'data:text/csv;charset=utf-8,Asset Name,Type,Revenue,Holders\nAI Music Generator,Patent,$8450,1247\nDigital Dreams Score,Copyright,$3200,567';
+                link.download = 'ip-analytics-report.csv';
+                link.click();
+                
+                alert('Analytics report downloaded successfully!');
+            }, 2000);
+        });
+
+        // Insight actions
+        document.querySelectorAll('.insight-action').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const title = this.closest('.insight-card').querySelector('.insight-title').textContent;
+                alert(`Opening ${title} details...`);
+            });
+        });
+
+        // Real-time data updates
+        function updateRealTimeData() {
+            // Update KPI values with slight variations
+            const kpiValues = document.querySelectorAll('.kpi-value');
+            kpiValues.forEach(value => {
+                const current = value.textContent;
+                if (current.includes(')) {
+                    const num = parseFloat(current.replace(/[$,]/g, ''));
+                    const change = (Math.random() - 0.5) * 1000;
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = ' + Math.round(newValue).toLocaleString();
+                } else if (current.includes('%')) {
+                    const num = parseFloat(current.replace('%', ''));
+                    const change = (Math.random() - 0.5) * 2;
+                    const newValue = Math.max(0, Math.min(100, num + change));
+                    value.textContent = newValue.toFixed(1) + '%';
+                } else if (!isNaN(parseFloat(current.replace(',', '')))) {
+                    const num = parseFloat(current.replace(',', ''));
+                    const change = Math.floor((Math.random() - 0.5) * 20);
+                    const newValue = Math.max(0, num + change);
+                    value.textContent = newValue.toLocaleString();
+                }
+            });
+        }
+
+        // Update data every 30 seconds
+        setInterval(updateRealTimeData, 30000);
+
+        // Table row hover effects
+        document.querySelectorAll('.table tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                const assetName = this.cells[0].textContent;
+                alert(`Opening detailed analytics for: ${assetName}`);
+            });
+        });
+
+        // Initialize tooltips and interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects to charts
+            const chartCards = document.querySelectorAll('.chart-card');
+            chartCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                });
+            });
+
+            // Add loading animation for KPI cards
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Advanced filtering for performance table
+        function filterTable(column, value) {
+            const rows = document.querySelectorAll('.table tbody tr');
+            rows.forEach(row => {
+                const cellValue = row.cells[column].textContent.toLowerCase();
+                const shouldShow = cellValue.includes(value.toLowerCase());
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+
+        // Add search functionality for table
+        const tableHeader = document.querySelector('.performance-table .chart-title');
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search assets...';
+        searchInput.style.cssText = `
+            margin-left: auto;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        `;
+        
+        searchInput.addEventListener('input', function() {
+            filterTable(0, this.value); // Filter by asset name (column 0)
+        });
+        
+        tableHeader.appendChild(searchInput);
+
+        // Performance indicators click handlers
+        document.querySelectorAll('.performance-indicator').forEach(indicator => {
+            indicator.addEventListener('click', function() {
+                const performance = this.textContent;
+                const assetRow = this.closest('tr');
+                const assetName = assetRow.cells[0].textContent;
+                alert(`${assetName} performance: ${performance}\n\nClick for detailed performance metrics and recommendations.`);
+            });
+        });
+
+        // Chart data refresh functionality
+        function refreshChartData() {
+            // Simulate new data points
+            const newRevenuePoint = Math.floor(Math.random() * 10000) + 35000;
+            const newVolumePoint = Math.floor(Math.random() * 8000) + 25000;
+            
+            // Add new data point and remove oldest
+            revenueChart.data.datasets[0].data.push(newRevenuePoint);
+            revenueChart.data.datasets[1].data.push(newVolumePoint);
+            
+            if (revenueChart.data.datasets[0].data.length > 12) {
+                revenueChart.data.datasets[0].data.shift();
+                revenueChart.data.datasets[1].data.shift();
+                revenueChart.data.labels.shift();
+            }
+            
+            // Add new label
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const currentMonth = new Date().getMonth();
+            revenueChart.data.labels.push(months[currentMonth]);
+            
+            revenueChart.update('none'); // Update without animation for smooth real-time feel
+        }
+
+        // Refresh chart data every 2 minutes for demo
+        setInterval(refreshChartData, 120000);
+    </script>
+</body>
+</html>
