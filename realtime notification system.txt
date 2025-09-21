@@ -1,0 +1,781 @@
+// server/services/NotificationService.js
+const webpush = require('web-push');
+const admin = require('firebase-admin');
+const EventEmitter = require('events');
+
+class NotificationService extends EventEmitter {
+  constructor(io, redis, prisma) {
+    super();
+    this.io = io;
+    this.redis = redis;
+    this.prisma = prisma;
+    
+    // Initialize push notification services
+    this.initializeWebPush();
+    this.initializeFirebase();
+    
+    // Notification queues
+    this.realTimeQueue = [];
+    this.pushQueue = [];
+    this.emailQueue = [];
+    
+    // Start background processors
+    this.startQueueProcessors();
+  }
+
+  initializeWebPush() {
+    webpush.setVapidDetails(
+      'mailto:' + process.env.VAPID_EMAIL,
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+  }
+
+  initializeFirebase() {
+    if (process.env.FIREBASE_ADMIN_KEY) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_KEY);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    }
+  }
+
+  async sendNotification(userId, notification, options = {}) {
+    const {
+      immediate = false,
+      platforms = ['WEB', 'MOBILE_IOS', 'MOBILE_ANDROID'],
+      priority = 'NORMAL',
+      persistent = true
+    } = options;
+
+    try {
+      // Store notification in database if persistent
+      let savedNotification = null;
+      if (persistent) {
+        savedNotification = await this.prisma.notification.create({
+          data: {
+            userId,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            data: notification.data || {},
+            platforms,
+            priority
+          }
+        });
+      }
+
+      // Real-time delivery via WebSocket
+      if (platforms.includes('WEB')) {
+        await this.sendRealTimeNotification(userId, {
+          ...notification,
+          id: savedNotification?.id,
+          priority,
+          platforms
+        });
+      }
+
+      // Push notifications for mobile
+      if (platforms.includes('MOBILE_IOS') || platforms.includes('MOBILE_ANDROID')) {
+        await this.sendPushNotification(userId, notification, { priority, immediate });
+      }
+
+      // Email notifications for important alerts
+      if (priority === 'HIGH' || priority === 'URGENT') {
+        await this.sendEmailNotification(userId, notification);
+      }
+
+      // Update analytics
+      await this.trackNotificationSent(userId, notification.type, platforms);
+
+      return {
+        success: true,
+        notificationId: savedNotification?.id,
+        deliveredTo: platforms
+      };
+
+    } catch (error) {
+      console.error('Notification send error:', error);
+      throw error;
+    }
+  }
+
+  async sendRealTimeNotification(userId, notification) {
+    // Send to specific user's room
+    this.io.to(`user_${userId}`).emit('notification', {
+      ...notification,
+      timestamp: new Date().toISOString(),
+      delivered: true
+    });
+
+    // Cache for offline delivery
+    await this.cacheNotificationForOfflineUser(userId, notification);
+
+    // Emit event for analytics
+    this.emit('notification_sent', {
+      userId,
+      type: notification.type,
+      platform: 'websocket',
+      timestamp: new Date()
+    });
+  }
+
+  async sendPushNotification(userId, notification, options = {}) {
+    const { priority = 'NORMAL', immediate = false } = options;
+
+    // Get user's push subscriptions
+    const subscriptions = await this.getUserPushSubscriptions(userId);
+
+    if (subscriptions.length === 0) {
+      console.log(`No push subscriptions found for user ${userId}`);
+      return;
+    }
+
+    const pushPayload = {
+      title: notification.title,
+      message: notification.message,
+      icon: '/icons/notification-icon.png',
+      badge: '/icons/badge-icon.png',
+      data: {
+        ...notification.data,
+        url: this.getNotificationUrl(notification.type, notification.data)
+      },
+      actions: this.getNotificationActions(notification.type)
+    };
+
+    if (immediate) {
+      // Send immediately
+      await this.deliverPushNotifications(subscriptions, pushPayload);
+    } else {
+      // Queue for batch processing
+      this.pushQueue.push({
+        userId,
+        subscriptions,
+        payload: pushPayload,
+        priority,
+        timestamp: new Date()
+      });
+    }
+  }
+
+  async deliverPushNotifications(subscriptions, payload) {
+    const promises = subscriptions.map(async (subscription) => {
+      try {
+        if (subscription.platform === 'WEB') {
+          // Web Push API
+          await webpush.sendNotification(
+            subscription.subscription,
+            JSON.stringify(payload),
+            {
+              urgency: this.getWebPushUrgency(payload.priority),
+              TTL: 24 * 60 * 60 // 24 hours
+            }
+          );
+        } else {
+          // Firebase Cloud Messaging for mobile
+          await admin.messaging().send({
+            token: subscription.fcmToken,
+            notification: {
+              title: payload.title,
+              body: payload.message,
+              imageUrl: payload.icon
+            },
+            data: payload.data,
+            android: {
+              priority: payload.priority === 'URGENT' ? 'high' : 'normal',
+              notification: {
+                icon: 'notification_icon',
+                color: '#6366f1',
+                sound: 'default'
+              }
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: {
+                    title: payload.title,
+                    body: payload.message
+                  },
+                  badge: 1,
+                  sound: 'default'
+                }
+              }
+            }
+          });
+        }
+
+        return { success: true, subscription: subscription.id };
+      } catch (error) {
+        console.error('Push delivery error:', error);
+        
+        // Remove invalid subscriptions
+        if (error.statusCode === 410) {
+          await this.removeInvalidSubscription(subscription.id);
+        }
+        
+        return { success: false, error: error.message, subscription: subscription.id };
+      }
+    });
+
+    return Promise.allSettled(promises);
+  }
+
+  async sendEmailNotification(userId, notification) {
+    // Queue email for processing
+    this.emailQueue.push({
+      userId,
+      notification,
+      timestamp: new Date()
+    });
+  }
+
+  async bulkNotify(userIds, notification, options = {}) {
+    const {
+      batchSize = 100,
+      delayMs = 1000,
+      ...notificationOptions
+    } = options;
+
+    const batches = this.chunkArray(userIds, batchSize);
+    
+    for (const batch of batches) {
+      const promises = batch.map(userId => 
+        this.sendNotification(userId, notification, notificationOptions)
+      );
+      
+      await Promise.allSettled(promises);
+      
+      // Delay between batches to avoid overwhelming the system
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  async createNotificationTemplate(type, data) {
+    const templates = {
+      BOND_CREATED: {
+        title: '🚀 New Bond Created!',
+        message: `${data.creatorName} just created a new bond: "${data.bondTitle}"`,
+        data: { bondId: data.bondId, creatorId: data.creatorId }
+      },
+      BOND_SUPPORTED: {
+        title: '💰 Bond Supported!',
+        message: `You received ${data.amount} ETH support for "${data.bondTitle}"`,
+        data: { bondId: data.bondId, supporterId: data.supporterId, amount: data.amount }
+      },
+      BOND_COMPLETED: {
+        title: '🎉 Bond Goal Reached!',
+        message: `Congratulations! Your bond "${data.bondTitle}" has reached its funding goal!`,
+        data: { bondId: data.bondId, finalAmount: data.finalAmount }
+      },
+      BOND_UPDATE: {
+        title: '📢 Bond Update',
+        message: `${data.creatorName} posted an update: "${data.updateTitle}"`,
+        data: { bondId: data.bondId, updateId: data.updateId }
+      },
+      TOKEN_CREATED: {
+        title: '🎨 New IP Token Minted!',
+        message: `${data.creatorName} just minted: "${data.tokenTitle}"`,
+        data: { tokenId: data.tokenId, creatorId: data.creatorId }
+      },
+      MILESTONE_REACHED: {
+        title: '🏆 Milestone Achieved!',
+        message: `You've reached ${data.milestone}! Keep up the great work!`,
+        data: { milestone: data.milestone, achievement: data.achievement }
+      },
+      SYSTEM_ANNOUNCEMENT: {
+        title: '📢 System Announcement',
+        message: data.message,
+        data: { announcementId: data.announcementId }
+      }
+    };
+
+    return templates[type] || {
+      title: 'Notification',
+      message: data.message || 'You have a new notification',
+      data: data
+    };
+  }
+
+  async subscribeUserToPush(userId, subscription, platform) {
+    try {
+      // Store subscription in database
+      await this.prisma.pushSubscription.create({
+        data: {
+          userId,
+          platform,
+          subscription: platform === 'WEB' ? subscription : null,
+          fcmToken: platform !== 'WEB' ? subscription.token : null,
+          endpoint: subscription.endpoint,
+          isActive: true
+        }
+      });
+
+      // Cache active subscriptions
+      await this.cacheUserSubscriptions(userId);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Push subscription error:', error);
+      throw error;
+    }
+  }
+
+  async unsubscribeUserFromPush(userId, subscriptionId) {
+    await this.prisma.pushSubscription.update({
+      where: { id: subscriptionId },
+      data: { isActive: false }
+    });
+
+    // Update cache
+    await this.cacheUserSubscriptions(userId);
+  }
+
+  async getUserPushSubscriptions(userId) {
+    // Try cache first
+    const cached = await this.redis.get(`push_subscriptions_${userId}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    // Fetch from database
+    const subscriptions = await this.prisma.pushSubscription.findMany({
+      where: { userId, isActive: true }
+    });
+
+    // Cache for 1 hour
+    await this.redis.setex(
+      `push_subscriptions_${userId}`, 
+      3600, 
+      JSON.stringify(subscriptions)
+    );
+
+    return subscriptions;
+  }
+
+  async cacheUserSubscriptions(userId) {
+    const subscriptions = await this.prisma.pushSubscription.findMany({
+      where: { userId, isActive: true }
+    });
+
+    await this.redis.setex(
+      `push_subscriptions_${userId}`, 
+      3600, 
+      JSON.stringify(subscriptions)
+    );
+  }
+
+  async cacheNotificationForOfflineUser(userId, notification) {
+    const key = `offline_notifications_${userId}`;
+    const notifications = await this.redis.get(key);
+    const existing = notifications ? JSON.parse(notifications) : [];
+    
+    existing.push({
+      ...notification,
+      timestamp: new Date().toISOString()
+    });
+
+    // Keep only last 50 notifications
+    const trimmed = existing.slice(-50);
+    
+    await this.redis.setex(key, 7 * 24 * 3600, JSON.stringify(trimmed)); // 7 days
+  }
+
+  async getOfflineNotifications(userId) {
+    const key = `offline_notifications_${userId}`;
+    const notifications = await this.redis.get(key);
+    
+    if (notifications) {
+      // Clear cache after delivery
+      await this.redis.del(key);
+      return JSON.parse(notifications);
+    }
+    
+    return [];
+  }
+
+  async markNotificationAsRead(userId, notificationId) {
+    await this.prisma.notification.update({
+      where: { id: notificationId, userId },
+      data: { 
+        read: true, 
+        readAt: new Date() 
+      }
+    });
+
+    // Broadcast read status to all user's devices
+    this.io.to(`user_${userId}`).emit('notification_read', {
+      notificationId,
+      readAt: new Date().toISOString()
+    });
+  }
+
+  async markAllNotificationsAsRead(userId) {
+    await this.prisma.notification.updateMany({
+      where: { userId, read: false },
+      data: { 
+        read: true, 
+        readAt: new Date() 
+      }
+    });
+
+    // Broadcast to all user's devices
+    this.io.to(`user_${userId}`).emit('notifications_all_read', {
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  async getUserNotifications(userId, options = {}) {
+    const {
+      limit = 50,
+      offset = 0,
+      unreadOnly = false,
+      type = null
+    } = options;
+
+    const where = { userId };
+    if (unreadOnly) where.read = false;
+    if (type) where.type = type;
+
+    return await this.prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+      include: {
+        user: {
+          select: { id: true, displayName: true, avatar: true }
+        }
+      }
+    });
+  }
+
+  async getNotificationStats(userId) {
+    const [total, unread, byType] = await Promise.all([
+      this.prisma.notification.count({ where: { userId } }),
+      this.prisma.notification.count({ where: { userId, read: false } }),
+      this.prisma.notification.groupBy({
+        by: ['type'],
+        where: { userId },
+        _count: { type: true }
+      })
+    ]);
+
+    return {
+      total,
+      unread,
+      byType: byType.reduce((acc, item) => {
+        acc[item.type] = item._count.type;
+        return acc;
+      }, {})
+    };
+  }
+
+  startQueueProcessors() {
+    // Process push notification queue every 5 seconds
+    setInterval(async () => {
+      if (this.pushQueue.length > 0) {
+        const batch = this.pushQueue.splice(0, 100); // Process 100 at a time
+        
+        for (const item of batch) {
+          try {
+            await this.deliverPushNotifications(item.subscriptions, item.payload);
+          } catch (error) {
+            console.error('Push queue processing error:', error);
+          }
+        }
+      }
+    }, 5000);
+
+    // Process email queue every 30 seconds
+    setInterval(async () => {
+      if (this.emailQueue.length > 0) {
+        const batch = this.emailQueue.splice(0, 10); // Process 10 emails at a time
+        
+        for (const item of batch) {
+          try {
+            await this.processEmailNotification(item);
+          } catch (error) {
+            console.error('Email queue processing error:', error);
+          }
+        }
+      }
+    }, 30000);
+  }
+
+  async processEmailNotification(item) {
+    // Implementation depends on your email service (SendGrid, AWS SES, etc.)
+    console.log('Processing email notification:', item);
+    // TODO: Implement email sending logic
+  }
+
+  async trackNotificationSent(userId, type, platforms) {
+    // Track notification analytics
+    const date = new Date().toISOString().split('T')[0];
+    
+    await this.redis.hincrby(
+      `notification_stats_${date}`,
+      `${type}_${platforms.join('_')}`,
+      1
+    );
+  }
+
+  getNotificationUrl(type, data) {
+    const urls = {
+      BOND_CREATED: `/bonds/${data.bondId}`,
+      BOND_SUPPORTED: `/bonds/${data.bondId}`,
+      BOND_COMPLETED: `/bonds/${data.bondId}`,
+      BOND_UPDATE: `/bonds/${data.bondId}/updates/${data.updateId}`,
+      TOKEN_CREATED: `/ip-tokens/${data.tokenId}`,
+      MILESTONE_REACHED: '/dashboard',
+      SYSTEM_ANNOUNCEMENT: '/announcements'
+    };
+
+    return urls[type] || '/dashboard';
+  }
+
+  getNotificationActions(type) {
+    const actions = {
+      BOND_CREATED: [
+        { action: 'view', title: 'View Bond' },
+        { action: 'support', title: 'Support Now' }
+      ],
+      BOND_SUPPORTED: [
+        { action: 'view', title: 'View Bond' },
+        { action: 'thank', title: 'Thank Supporter' }
+      ],
+      TOKEN_CREATED: [
+        { action: 'view', title: 'View Token' },
+        { action: 'share', title: 'Share' }
+      ]
+    };
+
+    return actions[type] || [{ action: 'view', title: 'View' }];
+  }
+
+  getWebPushUrgency(priority) {
+    const urgencyMap = {
+      LOW: 'very-low',
+      NORMAL: 'normal',
+      HIGH: 'high',
+      URGENT: 'high'
+    };
+    return urgencyMap[priority] || 'normal';
+  }
+
+  chunkArray(array, size) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  }
+
+  async removeInvalidSubscription(subscriptionId) {
+    await this.prisma.pushSubscription.update({
+      where: { id: subscriptionId },
+      data: { isActive: false }
+    });
+  }
+}
+
+module.exports = NotificationService;
+
+// ================================
+// client/services/NotificationClient.js - Frontend Integration
+// ================================
+
+class NotificationClient {
+  constructor() {
+    this.socket = null;
+    this.registration = null;
+    this.isSubscribed = false;
+  }
+
+  async initialize(userId, socketUrl) {
+    try {
+      // Initialize WebSocket connection
+      this.socket = io(socketUrl);
+      
+      // Setup socket event handlers
+      this.setupSocketHandlers(userId);
+      
+      // Initialize push notifications
+      await this.initializePushNotifications();
+      
+      console.log('✅ Notification client initialized');
+    } catch (error) {
+      console.error('❌ Notification client initialization failed:', error);
+    }
+  }
+
+  setupSocketHandlers(userId) {
+    this.socket.on('connect', () => {
+      console.log('🔗 Connected to notification service');
+      this.socket.emit('authenticate', localStorage.getItem('authToken'));
+    });
+
+    this.socket.on('notification', (notification) => {
+      this.handleRealTimeNotification(notification);
+    });
+
+    this.socket.on('offline_notifications', (notifications) => {
+      notifications.forEach(notification => {
+        this.handleRealTimeNotification(notification);
+      });
+    });
+
+    this.socket.on('notification_read', (data) => {
+      this.handleNotificationRead(data);
+    });
+  }
+
+  async initializePushNotifications() {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      try {
+        this.registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('✅ Service worker registered');
+        
+        // Check if already subscribed
+        const existingSubscription = await this.registration.pushManager.getSubscription();
+        this.isSubscribed = !!existingSubscription;
+        
+      } catch (error) {
+        console.error('❌ Service worker registration failed:', error);
+      }
+    }
+  }
+
+  async subscribeToPushNotifications() {
+    if (!this.registration) {
+      throw new Error('Service worker not registered');
+    }
+
+    try {
+      const subscription = await this.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(window.VAPID_PUBLIC_KEY)
+      });
+
+      // Send subscription to server
+      await fetch('/api/notifications/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          subscription,
+          platform: 'WEB'
+        })
+      });
+
+      this.isSubscribed = true;
+      console.log('✅ Push notifications enabled');
+      
+    } catch (error) {
+      console.error('❌ Push subscription failed:', error);
+      throw error;
+    }
+  }
+
+  async unsubscribeFromPushNotifications() {
+    if (!this.registration) return;
+
+    try {
+      const subscription = await this.registration.pushManager.getSubscription();
+      if (subscription) {
+        await subscription.unsubscribe();
+        
+        // Notify server
+        await fetch('/api/notifications/unsubscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+      }
+
+      this.isSubscribed = false;
+      console.log('✅ Push notifications disabled');
+      
+    } catch (error) {
+      console.error('❌ Push unsubscription failed:', error);
+    }
+  }
+
+  handleRealTimeNotification(notification) {
+    // Show browser notification if permission granted
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/icons/notification-icon.png',
+        badge: '/icons/badge-icon.png',
+        tag: notification.id,
+        data: notification.data
+      });
+    }
+
+    // Update UI
+    this.updateNotificationUI(notification);
+    
+    // Trigger custom event for app components
+    window.dispatchEvent(new CustomEvent('newNotification', {
+      detail: notification
+    }));
+  }
+
+  updateNotificationUI(notification) {
+    // Update notification badge
+    const badge = document.querySelector('.notification-badge');
+    if (badge) {
+      const count = parseInt(badge.textContent || '0') + 1;
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'block' : 'none';
+    }
+
+    // Add to notification list if visible
+    const list = document.querySelector('.notification-list');
+    if (list) {
+      const item = this.createNotificationItem(notification);
+      list.insertAdjacentElement('afterbegin', item);
+    }
+  }
+
+  createNotificationItem(notification) {
+    const item = document.createElement('div');
+    item.className = 'notification-item unread';
+    item.innerHTML = `
+      <div class="notification-content">
+        <h4>${notification.title}</h4>
+        <p>${notification.message}</p>
+        <span class="notification-time">${new Date(notification.timestamp).toLocaleTimeString()}</span>
+      </div>
+    `;
+    return item;
+  }
+
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+}
+
+// Export for use in React components
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NotificationClient;
+} else {
+  window.NotificationClient = NotificationClient;
+}

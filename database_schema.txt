@@ -1,0 +1,465 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// User Management
+// ================================
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile Information
+  walletAddress String   @unique
+  email         String?  @unique
+  username      String?  @unique
+  displayName   String?
+  bio           String?
+  avatar        String?
+  coverImage    String?
+  
+  // Social Links
+  socialLinks   Json?    // { twitter, discord, website, etc. }
+  
+  // User Status
+  role          UserRole @default(CREATOR)
+  isVerified    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  
+  // Platform Preferences
+  preferences   Json?    // Notification settings, theme, etc.
+  
+  // Relationships
+  bonds         Bond[]           @relation("BondCreator")
+  supportedBonds BondSupport[]
+  ipTokens      IPToken[]
+  notifications Notification[]
+  analytics     UserAnalytics[]
+  syncLogs      SyncLog[]
+  sessions      UserSession[]
+  
+  @@map("users")
+}
+
+enum UserRole {
+  CREATOR
+  SUPPORTER
+  ADMIN
+  MODERATOR
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  platform  Platform
+  deviceId  String?
+  ipAddress String?
+  userAgent String?
+  isActive  Boolean  @default(true)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_sessions")
+}
+
+enum Platform {
+  WEB
+  MOBILE_IOS
+  MOBILE_ANDROID
+  DESKTOP
+}
+
+// ================================
+// IP Tokens
+// ================================
+
+model IPToken {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Blockchain Data
+  tokenId     BigInt   @unique
+  contractAddress String
+  chainId     Int
+  
+  // Token Metadata
+  title       String
+  description String?
+  metadataURI String
+  category    TokenCategory?
+  tags        String[]
+  
+  // Ownership & Rights
+  creatorId   String
+  totalSupply BigInt
+  royaltyBasisPoints Int // e.g., 500 = 5%
+  
+  // Status
+  isActive    Boolean @default(true)
+  isFeatured  Boolean @default(false)
+  
+  // Analytics
+  viewCount   Int     @default(0)
+  likeCount   Int     @default(0)
+  shareCount  Int     @default(0)
+  
+  // Relationships
+  creator     User    @relation(fields: [creatorId], references: [id])
+  bonds       Bond[]
+  analytics   TokenAnalytics[]
+  
+  @@map("ip_tokens")
+}
+
+enum TokenCategory {
+  ART
+  MUSIC
+  VIDEO
+  WRITING
+  CODE
+  DESIGN
+  PHOTOGRAPHY
+  GAMING
+  EDUCATION
+  OTHER
+}
+
+// ================================
+// Creator Bonds
+// ================================
+
+model Bond {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Bond Details
+  title       String
+  description String?
+  targetAmount Decimal  @db.Decimal(20, 8) // Using Decimal for precise amounts
+  currentAmount Decimal @default(0) @db.Decimal(20, 8)
+  minContribution Decimal? @db.Decimal(20, 8)
+  
+  // Timing
+  duration    Int?     // Duration in seconds
+  endsAt      DateTime?
+  
+  // Status
+  isActive    Boolean  @default(true)
+  isFunded    Boolean  @default(false)
+  isCompleted Boolean  @default(false)
+  
+  // Relationships
+  creatorId   String
+  ipTokenId   String?
+  
+  creator     User     @relation("BondCreator", fields: [creatorId], references: [id])
+  ipToken     IPToken? @relation(fields: [ipTokenId], references: [id])
+  supporters  BondSupport[]
+  analytics   BondAnalytics[]
+  updates     BondUpdate[]
+  
+  @@map("bonds")
+}
+
+model BondSupport {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Support Details
+  amount    Decimal  @db.Decimal(20, 8)
+  currency  String   @default("ETH")
+  
+  // Transaction Data
+  txHash    String?  @unique
+  blockNumber BigInt?
+  
+  // Relationships
+  bondId    String
+  supporterId String
+  
+  bond      Bond @relation(fields: [bondId], references: [id], onDelete: Cascade)
+  supporter User @relation(fields: [supporterId], references: [id])
+  
+  @@unique([bondId, supporterId, txHash])
+  @@map("bond_supports")
+}
+
+model BondUpdate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  title     String
+  content   String
+  type      UpdateType @default(PROGRESS)
+  
+  // Media attachments
+  media     Json?    // Array of media URLs and metadata
+  
+  bondId    String
+  bond      Bond @relation(fields: [bondId], references: [id], onDelete: Cascade)
+  
+  @@map("bond_updates")
+}
+
+enum UpdateType {
+  PROGRESS
+  MILESTONE
+  COMPLETION
+  ANNOUNCEMENT
+}
+
+// ================================
+// Notifications
+// ================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Notification Content
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?    // Additional context data
+  
+  // Status
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  
+  // Delivery
+  platforms Platform[] // Which platforms to deliver to
+  priority  NotificationPriority @default(NORMAL)
+  
+  // Relationships
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  BOND_CREATED
+  BOND_SUPPORTED
+  BOND_COMPLETED
+  BOND_UPDATE
+  TOKEN_CREATED
+  TOKEN_TRANSFER
+  FOLLOWER_NEW
+  SYSTEM_ANNOUNCEMENT
+  PAYMENT_RECEIVED
+  MILESTONE_REACHED
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// ================================
+// Analytics & Metrics
+// ================================
+
+model UserAnalytics {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  date      DateTime @db.Date
+  
+  // User Metrics
+  pageViews       Int @default(0)
+  uniqueVisitors  Int @default(0)
+  bondsCreated    Int @default(0)
+  bondsSupported  Int @default(0)
+  tokensCreated   Int @default(0)
+  totalEarned     Decimal @default(0) @db.Decimal(20, 8)
+  totalSpent      Decimal @default(0) @db.Decimal(20, 8)
+  
+  // Engagement Metrics
+  profileViews    Int @default(0)
+  socialShares    Int @default(0)
+  messagesSent    Int @default(0)
+  
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@map("user_analytics")
+}
+
+model BondAnalytics {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  date      DateTime @db.Date
+  
+  // Bond Metrics
+  views         Int @default(0)
+  uniqueViews   Int @default(0)
+  supporters    Int @default(0)
+  newSupport    Decimal @default(0) @db.Decimal(20, 8)
+  totalSupport  Decimal @default(0) @db.Decimal(20, 8)
+  
+  // Engagement
+  likes         Int @default(0)
+  shares        Int @default(0)
+  comments      Int @default(0)
+  
+  bondId String
+  bond   Bond @relation(fields: [bondId], references: [id], onDelete: Cascade)
+  
+  @@unique([bondId, date])
+  @@map("bond_analytics")
+}
+
+model TokenAnalytics {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  date      DateTime @db.Date
+  
+  // Token Metrics
+  views         Int @default(0)
+  uniqueViews   Int @default(0)
+  transfers     Int @default(0)
+  volume        Decimal @default(0) @db.Decimal(20, 8)
+  
+  // Engagement
+  likes         Int @default(0)
+  shares        Int @default(0)
+  downloads     Int @default(0)
+  
+  tokenId String
+  token   IPToken @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  
+  @@unique([tokenId, date])
+  @@map("token_analytics")
+}
+
+model PlatformAnalytics {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  date      DateTime @db.Date
+  
+  // Platform-wide Metrics
+  totalUsers        Int @default(0)
+  activeUsers       Int @default(0)
+  newUsers          Int @default(0)
+  totalBonds        Int @default(0)
+  activeBonds       Int @default(0)
+  completedBonds    Int @default(0)
+  totalVolume       Decimal @default(0) @db.Decimal(20, 8)
+  platformFees      Decimal @default(0) @db.Decimal(20, 8)
+  
+  // Per-platform breakdown
+  webUsers          Int @default(0)
+  mobileUsers       Int @default(0)
+  
+  @@unique([date])
+  @@map("platform_analytics")
+}
+
+// ================================
+// Synchronization & Logging
+// ================================
+
+model SyncLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  userId    String
+  platform  Platform
+  timestamp DateTime
+  status    SyncStatus
+  conflicts Int      @default(0)
+  dataSize  Int?     // Size of synced data in bytes
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sync_logs")
+}
+
+enum SyncStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+  CONFLICT
+}
+
+// ================================
+// System Configuration
+// ================================
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  
+  @@map("system_config")
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isEnabled   Boolean  @default(false)
+  rolloutPercentage Int @default(0) // 0-100
+  targetRoles UserRole[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("feature_flags")
+}
+
+// ================================
+// Indexes for Performance
+// ================================
+
+// User indexes
+@@index([User.walletAddress])
+@@index([User.email])
+@@index([User.username])
+@@index([User.role])
+@@index([User.isActive])
+
+// Bond indexes  
+@@index([Bond.creatorId])
+@@index([Bond.isActive])
+@@index([Bond.isFunded])
+@@index([Bond.createdAt])
+@@index([Bond.endsAt])
+
+// IP Token indexes
+@@index([IPToken.creatorId])
+@@index([IPToken.category])
+@@index([IPToken.isActive])
+@@index([IPToken.isFeatured])
+@@index([IPToken.createdAt])
+
+// Analytics indexes
+@@index([UserAnalytics.userId, UserAnalytics.date])
+@@index([BondAnalytics.bondId, BondAnalytics.date])
+@@index([TokenAnalytics.tokenId, TokenAnalytics.date])
+@@index([PlatformAnalytics.date])
+
+// Notification indexes
+@@index([Notification.userId, Notification.read])
+@@index([Notification.type])
+@@index([Notification.createdAt])
+
+// Sync indexes
+@@index([SyncLog.userId, SyncLog.platform])
+@@index([SyncLog.timestamp])
+@@index([SyncLog.status])
