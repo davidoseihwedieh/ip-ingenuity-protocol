@@ -1,0 +1,126 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan Dashboard - IP Ingenuity Protocol</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .fan-dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #fff;
+            background: #121212;
+        }
+        .creator-card {
+            background: #1a1a1a;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        .progress-bar {
+            background: #333;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress {
+            background: #4caf50;
+            height: 100%;
+        }
+        .subscribe-btn {
+            background: #4caf50;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="fan-dashboard">
+        <h1>Fan Dashboard</h1>
+        <section class="fan-journey">
+            <h2>Your Fan Journey</h2>
+            <p>Level: True Fan (Level 3)</p>
+            <div class="progress-bar">
+                <div class="progress" style="width: 60%"></div>
+            </div>
+            <p>Tokens Held: 50 | Months Subscribed: 6</p>
+        </section>
+        <section class="creators">
+            <h2>Your Creators</h2>
+            <div class="creator-card">
+                <h3>Creator: AI Music Algorithm</h3>
+                <p>Tokens Owned: 10 | Monthly Subscription: 0.01 ETH</p>
+                <p>Perks: Exclusive tracks, voting on next album</p>
+                <button class="subscribe-btn" onclick="subscribeToCreator(1)">Renew Subscription</button>
+            </div>
+            <div class="creator-card">
+                <h3>Creator: Digital Artist</h3>
+                <p>Tokens Owned: 5 | Monthly Subscription: 0.02 ETH</p>
+                <p>Perks: Early access to artwork, community Q&A</p>
+                <button class="subscribe-btn" onclick="subscribeToCreator(2)">Subscribe</button>
+            </div>
+        </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        async function subscribeToCreator(tokenId) {
+            // Connect to MetaMask and call CreatorBonds.sol
+            if (window.ethereum) {
+                const web3 = new Web3(window.ethereum);
+                await window.ethereum.enable();
+                const accounts = await web3.eth.getAccounts();
+                const contract = new web3.eth.Contract(ABI, 'CONTRACT_ADDRESS');
+                await contract.methods.subscribe(tokenId).send({
+                    from: accounts[0],
+                    value: web3.utils.toWei('0.01', 'ether')
+                });
+                alert('Subscribed successfully!');
+            } else {
+                alert('Please install MetaMask');
+            }
+        }
+    </script>
