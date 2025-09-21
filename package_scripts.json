@@ -1,0 +1,332 @@
+{
+  "name": "creatorbonds-enhanced",
+  "version": "1.0.0",
+  "description": "Enhanced CreatorBonds platform with unified navigation and smart contracts",
+  "main": "index.js",
+  "scripts": {
+    "preinstall": "node scripts/checkEnvironment.js",
+    "postinstall": "echo '✅ Installation complete! Run npm run setup to get started.'",
+    
+    "setup": "node scripts/setup.js",
+    "clean": "hardhat clean && rm -rf test-results deployments",
+    
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:gas": "REPORT_GAS=true hardhat test",
+    "test:coverage": "hardhat coverage",
+    
+    "deploy:local": "hardhat run deployment/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run deployment/deploy.js --network sepolia", 
+    "deploy:mumbai": "hardhat run deployment/deploy.js --network mumbai",
+    "deploy:polygon": "hardhat run deployment/deploy.js --network polygon",
+    
+    "test:deployment": "node scripts/quickDeploymentTest.js",
+    "test:deployment:local": "npm run node:start && npm run test:deployment -- --network localhost && npm run node:stop",
+    "test:deployment:sepolia": "npm run test:deployment -- --network sepolia",
+    "test:deployment:mumbai": "npm run test:deployment -- --network mumbai",
+    
+    "node": "hardhat node",
+    "node:start": "hardhat node &",
+    "node:stop": "pkill -f 'hardhat node'",
+    
+    "verify:sepolia": "hardhat verify --network sepolia",
+    "verify:mumbai": "hardhat verify --network mumbai",
+    "verify:polygon": "hardhat verify --network polygon",
+    
+    "flatten": "hardhat flatten contracts/CreatorBonds.sol > CreatorBonds-flattened.sol",
+    "size": "hardhat size-contracts",
+    
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "start:dev": "concurrently \"npm run node\" \"npm run start\"",
+    
+    "start:backend-services": "node scripts/startBackendServices.js",
+    "start:full-stack": "concurrently \"npm run node\" \"npm run start:backend-services\" \"npm run start\"",
+    
+    "deploy:full": "bash scripts/run-deployment-test.sh"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.15.0",
+    "lucide-react": "^0.263.1",
+    "ethers": "^5.7.2",
+    "web3": "^4.1.1",
+    "axios": "^1.5.0",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "hardhat": "^2.17.1",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-gas-reporter": "^1.0.9",
+    "hardhat-coverage": "^2.0.1",
+    "chai": "^4.3.7",
+    "dotenv": "^16.3.1",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "react-scripts": "5.0.1"
+  },
+  "keywords": [
+    "ethereum",
+    "smart-contracts", 
+    "creator-economy",
+    "bonds",
+    "ip-tokens",
+    "defi"
+  ],
+  "author": "CreatorBonds Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
+
+// ===============================
+// scripts/checkEnvironment.js
+// ===============================
+
+const fs = require('fs');
+const path = require('path');
+
+console.log('🔍 Checking environment setup...');
+
+// Check Node.js version
+const nodeVersion = process.version;
+const requiredVersion = '16.0.0';
+
+if (!nodeVersion.startsWith('v16') && !nodeVersion.startsWith('v18') && !nodeVersion.startsWith('v20')) {
+  console.error(`❌ Node.js version ${nodeVersion} is not supported. Please use Node.js 16.0.0 or higher.`);
+  process.exit(1);
+}
+
+console.log(`✅ Node.js version ${nodeVersion} is compatible`);
+
+// Check if required directories exist
+const requiredDirs = ['contracts', 'test', 'deployment'];
+requiredDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    console.log(`📁 Creating ${dir} directory...`);
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+console.log('✅ Environment check complete');
+
+// ===============================
+// scripts/setup.js  
+// ===============================
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+console.log('🚀 Setting up CreatorBonds Enhanced...\n');
+
+// 1. Create directory structure
+console.log('📁 Creating project structure...');
+const dirs = [
+  'contracts',
+  'test', 
+  'deployment',
+  'deployments',
+  'test-results',
+  'scripts',
+  'src/components',
+  'src/contexts',
+  'src/hooks',
+  'src/utils',
+  'public'
+];
+
+dirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`  ✅ Created ${dir}/`);
+  }
+});
+
+// 2. Check for .env file
+console.log('\n🔐 Checking environment configuration...');
+if (!fs.existsSync('.env')) {
+  if (fs.existsSync('.env.example')) {
+    fs.copyFileSync('.env.example', '.env');
+    console.log('  ✅ Created .env from template');
+    console.log('  ⚠️  Please edit .env with your actual values');
+  } else {
+    // Create basic .env template
+    const envTemplate = `# CreatorBonds Enhanced Environment Variables
+
+# Deployment Configuration
+PRIVATE_KEY=your_private_key_here_without_0x_prefix
+ALCHEMY_API_KEY=your_alchemy_api_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
+POLYGONSCAN_API_KEY=your_polygonscan_api_key
+
+# Gas Reporting (Optional)
+REPORT_GAS=false
+COINMARKETCAP_API_KEY=your_coinmarketcap_key
+
+# Application Configuration
+REACT_APP_NETWORK=localhost
+REACT_APP_CONTRACT_ADDRESS=
+REACT_APP_API_URL=http://localhost:3001
+
+# Database (for backend services)
+DATABASE_URL=postgresql://localhost:5432/creatorbonds
+REDIS_URL=redis://localhost:6379
+
+# Third-party Integrations
+DISCORD_BOT_TOKEN=your_discord_bot_token
+TWITTER_API_KEY=your_twitter_api_key
+`;
+    fs.writeFileSync('.env', envTemplate);
+    console.log('  ✅ Created .env template');
+    console.log('  ⚠️  Please edit .env with your actual values');
+  }
+} else {
+  console.log('  ✅ .env file already exists');
+}
+
+// 3. Create gitignore if it doesn't exist
+console.log('\n📝 Setting up Git configuration...');
+if (!fs.existsSync('.gitignore')) {
+  const gitignoreContent = `# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+test-results/
+
+# Production
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Hardhat
+artifacts/
+cache/
+deployments/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# next.js build output
+.next
+
+# nuxt.js build output
+.nuxt
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+`;
+  fs.writeFileSync('.gitignore', gitignoreContent);
+  console.log('  ✅ Created .gitignore');
+}
+
+// 4. Make scripts executable
+console.log('\n🔧 Making scripts executable...');
+try {
+  if (fs.existsSync('scripts/run-deployment-test.sh')) {
+    execSync('chmod +x scripts/run-deployment-test.sh');
+    console.log('  ✅ Made deployment test script executable');
+  }
+} catch (error) {
+  console.log('  ⚠️  Could not make scripts executable (Windows?)');
+}
+
+console.log('\n🎉 Setup complete!\n');
+console.log('📋 Next steps:');
+console.log('1. Edit .env file with your configuration');
+console.log('2. Run: npm run compile');
+console.log('3. Run: npm run test');
+console.log('4. Run: npm run deploy:full');
+console.log('\n🚀 Happy building!');
+
+// ===============================
+// scripts/startBackendServices.js
+// ===============================
+
+console.log('🔄 Starting Backend Services Integration...');
+console.log('This will be implemented in Phase 3!');
+console.log('');
+console.log('📋 Backend Services will include:');
+console.log('  - Cross-platform data synchronization');
+console.log('  - Real-time notification systems');
+console.log('  - Analytics and recommendation engines');
+console.log('  - Third-party integrations');
+console.log('');
+console.log('🎯 Current Status: Ready for Phase 3 implementation');
+
+// For now, just indicate readiness
+process.exit(0);
