@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified UX Components - IP Ingenuity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        .mode-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .unified-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .unified-card:hover {
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .cross-platform-highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .platform-toggle {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Unified Navigation Component -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo & Brand -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-lightbulb text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">IP Ingenuity</span>
+                    </a>
+                </div>
+                
+                <!-- Platform Mode Toggle -->
+                <div class="flex items-center space-x-4">
+                    <div class="hidden md:flex bg-gray-100 rounded-lg p-1" id="platformToggle">
+                        <button class="px-4 py-2 rounded-md transition-all duration-300 font-medium text-sm mode-btn" 
+                                data-mode="investor" 
+                                onclick="switchMode('investor')">
+                            <i class="fas fa-chart-line mr-2"></i>Investor
+                        </button>
+                        <button class="px-4 py-2 rounded-md transition-all duration-300 font-medium text-sm mode-btn platform-toggle text-white" 
+                                data-mode="fan" 
+                                onclick="switchMode('fan')">
+                            <i class="fas fa-heart mr-2"></i>Fan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Profile -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button class="p-2 text-gray-600 hover:text-purple-600 transition-colors" onclick="toggleNotifications()">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="notification-badge absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                        </button>
+                        
+                        <!-- Notifications Dropdown -->
+                        <div id="notificationsDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                            <div class="p-4 border-b border-gray-200">
+                                <h3 class="font-semibold text-gray-900">Notifications</h3>
+                            </div>
+                            <div class="max-h-96 overflow-y-auto">
+                                <!-- Cross-platform notification -->
+                                <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="handleCrossNotification()">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-star text-white text-sm"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium text-gray-900">IP Investment Opportunity!</div>
+                                            <div class="text-xs text-gray-600">Your favorite creator is tokenizing their latest work</div>
+                                            <div class="text-xs text-purple-600 font-medium mt-1">Exclusive fan access</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Fan notification -->
+                                <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-music text-green-600 text-sm"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium text-gray-900">New Track Released</div>
+                                            <div class="text-xs text-gray-600">AI Music Algorithm just dropped "Digital Dreams"</div>
+                                            <div class="text-xs text-gray-500">2 hours ago</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Menu -->
+                    <div class="flex items-center space-x-3">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" 
+                             alt="Profile" class="w-8 h-8 rounded-full">
+                        <div class="hidden md:block">
+                            <div class="text-sm font-medium text-gray-700" id="userName">David Johnson</div>
+                            <div class="text-xs text-gray-500" id="userStatus">True Fan • Level 3</div>
+                        </div>
+                        <button class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Navigation Bar -->
+        <div class="border-t border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8" id="dynamicNav">
+                    <!-- Fan Mode Navigation (Default) -->
+                    <div class="fan-nav flex space-x-8">
+                        <a href="/xpages/fan_dashboard.html" class="border-b-2 border-purple-600 text-purple-600 py-4 px-1 text-sm font-medium">
+                            Fan Dashboard
+                        </a>
+                        <a href="/creators" class="border-b-2 border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300 py-4 px-1 text-sm font-medium transition-colors">
+                            Discover Creators
+                        </a>
+                        <a href="/community" class="border-b-2 border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300 py-4 px-1 text-sm font-medium transition-colors">
+                            Community
+                        </a>
+                        <a href="/rewards" class="border-b-2 border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300 py-4 px-1 text-sm font-medium transition-colors">
+                            Rewards
+                        </a>
+                    </div>
+
+                    <!-- Investor Mode Navigation (Hidden by default) -->
+                    <div class="investor-nav hidden flex space-x-8">
+                        <a href="/xpages/ip_dashboard.html" class="border-b-2 border-purple-600 text-purple-600 py-4 px-1 text-sm font-medium">
+                            IP Dashboard
+                        </a>
+                        <a href="/xpages/ip_tokenize.html" class="border-b-2 border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300 py-4 px-1 text-sm font-medium transition-colors">
+                            Tokenize IP
+                        </a>
+                        <a href="/xpages/ip_marketplace.html" class="border-b-2 border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300 py-4 px-1 text-sm font-medium transition-colors">
+                            Marketplace
+                        </a>
+                        <a href="/xpages/ip_analytics.html" class="border-b-2 border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300 py-4 px-1 text-sm font-medium transition-colors">
+                            Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Cross-Platform Opportunity Banner -->
+    <div id="crossPlatformBanner" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-star text-yellow-300"></i>
+                <span class="font-medium">🎉 Unlock IP investor benefits! Your fan activity qualifies you for exclusive investment opportunities.</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="exploreCrossOpportunity()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-1 rounded-lg text-sm font-medium transition-colors">
+                    Explore
+                </button>
+                <button onclick="dismissBanner()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Mode Transition Component -->
+        <div class="mb-8">
+            <div class="unified-card p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <span class="cross-platform-highlight">Unified Platform Experience</span>
+                </h2>
+                <p class="text-gray-600 mb-6">
+                    Seamlessly switch between supporting your favorite creators and investing in intellectual property. 
+                    Your activity in both areas unlocks exclusive benefits and opportunities.
+                </p>
+                
+                <!-- Platform Benefits Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Fan Benefits -->
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-heart text-white"></i>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-gray-900">Fan Platform</h3>
+                        </div>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Support creators directly</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Exclusive content access</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Level-based rewards</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Community participation</li>
+                        </ul>
+                    </div>
+
+                    <!-- Investor Benefits -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-chart-line text-white"></i>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-gray-900">IP Platform</h3>
+                        </div>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Tokenized IP investments</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Revenue sharing</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Portfolio diversification</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Advanced analytics</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross-Platform Opportunities Component -->
+        <div class="mb-8">
+            <div class="unified-card p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-link text-purple-600 mr-2"></i>
+                        Cross-Platform Opportunities
+                    </h3>
+                    <button onclick="refreshOpportunities()" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                        <i class="fas fa-refresh mr-1"></i> Refresh
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="opportunitiesGrid">
+                    <!-- Fan to Investor Opportunity -->
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200 hover:border-purple-300 transition-colors cursor-pointer" 
+                         onclick="handleOpportunity('fan-to-investor')">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-arrow-right text-white text-sm"></i>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-purple-800">Fan → Investor</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Creator IP Investment</h4>
+                        <p class="text-sm text-gray-600 mb-4">Your favorite creator "AI Music Algorithm" is tokenizing their latest composition. Get exclusive early access!</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-purple-600">15% fan discount</span>
+                            <i class="fas fa-chevron-right text-purple-600"></i>
+                        </div>
+                    </div>
+
+                    <!-- Investor to Fan Opportunity -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200 hover:border-blue-300 transition-colors cursor-pointer" 
+                         onclick="handleOpportunity('investor-to-fan')">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-arrow-left text-white text-sm"></i>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-blue-800">Investor → Fan</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Support IP Creators</h4>
+                        <p class="text-sm text-gray-600 mb-4">Connect with creators behind your IP investments. Support "Digital Artist" through fan subscriptions.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-blue-600">VIP fan access</span>
+                            <i class="fas fa-chevron-right text-blue-600"></i>
+                        </div>
+                    </div>
+
+                    <!-- Cross-Platform Reward -->
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200 hover:border-green-300 transition-colors cursor-pointer" 
+                         onclick="handleOpportunity('cross-reward')">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-gift text-white text-sm"></i>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-green-800">Loyalty Reward</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Unlock Platform Bonus</h4>
+                        <p class="text-sm text-gray-600 mb-4">Your activity across both platforms has earned you 500 bonus loyalty points and premium features!</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-green-600">Claim now</span>
+                            <i class="fas fa-chevron-right text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Journey Progress Component -->
+        <div class="mb-8">
+            <div class="unified-card p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-route text-purple-600 mr-2"></i>
+                    Your Platform Journey
+                </h3>
+
+                <!-- Progress Timeline -->
+                <div class="relative">
+                    <!-- Progress Line -->
+                    <div class="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200"></div>
+                    <div class="absolute left-4 top-8 w-0.5 bg-gradient-to-b from-purple-600 to-pink-600" style="height: 60%"></div>
+
+                    <!-- Journey Steps -->
+                    <div class="space-y-8">
+                        <!-- Step 1: Completed -->
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center relative z-10">
+                                <i class="fas fa-check text-white text-sm"></i>
+                            </div>
+                            <div class="ml-6">
+                                <h4 class="font-semibold text-gray-900">Fan Journey Started</h4>
+                                <p class="text-sm text-gray-600">Subscribed to first creator • Level 3 achieved</p>
+                                <span class="text-xs text-green-600 font-medium">Completed</span>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Current -->
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center relative z-10">
+                                <i class="fas fa-star text-white text-sm"></i>
+                            </div>
+                            <div class="ml-6">
+                                <h4 class="font-semibold text-gray-900">Cross-Platform Integration</h4>
+                                <p class="text-sm text-gray-600">Explore IP investment opportunities • Unlock investor benefits</p>
+                                <span class="text-xs text-purple-600 font-medium">In Progress</span>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Future -->
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center relative z-10">
+                                <i class="fas fa-crown text-white text-sm"></i>
+                            </div>
+                            <div class="ml-6">
+                                <h4 class="font-semibold text-gray-500">Platform Mastery</h4>
+                                <p class="text-sm text-gray-500">Become a platform advocate • Exclusive benefits unlocked</p>
+                                <span class="text-xs text-gray-500 font-medium">Future</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="unified-card p-6 text-center cursor-pointer hover:shadow-lg transition-all" onclick="quickAction('discover')">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-search text-purple-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 mb-2">Discover</h4>
+                <p class="text-sm text-gray-600">Find new creators and IP opportunities</p>
+            </div>
+
+            <div class="unified-card p-6 text-center cursor-pointer hover:shadow-lg transition-all" onclick="quickAction('portfolio')">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-pie text-blue-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 mb-2">Portfolio</h4>
+                <p class="text-sm text-gray-600">View your investments and subscriptions</p>
+            </div>
+
+            <div class="unified-card p-6 text-center cursor-pointer hover:shadow-lg transition-all" onclick="quickAction('rewards')">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-gift text-green-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 mb-2">Rewards</h4>
+                <p class="text-sm text-gray-600">Claim your loyalty rewards and benefits</p>
+            </div>
+
+            <div class="unified-card p-6 text-center cursor-pointer hover:shadow-lg transition-all" onclick="quickAction('community')">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-yellow-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 mb-2">Community</h4>
+                <p class="text-sm text-gray-600">Connect with other fans and investors</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for UX Integration -->
+    <script>
+        // Current platform mode
+        let currentMode = 'fan';
+        
+        // User data (would come from API in real implementation)
+        const userData = {
+            name: 'David Johnson',
+            fanLevel: 3,
+            fanLevelName: 'True Fan',
+            ipInvestor: false,
+            crossPlatformScore: 750,
+            notifications: [
+                {
+                    id: 1,
+                    type: 'cross-platform',
+                    title: 'IP Investment Opportunity!',
+                    message: 'Your favorite creator is tokenizing their latest work',
+                    action: 'explore-ip',
+                    timestamp: new Date()
+                },
+                {
+                    id: 2,
+                    type: 'fan',
+                    title: 'New Track Released',
+                    message: 'AI Music Algorithm just dropped "Digital Dreams"',
+                    action: 'view-content',
+                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+                }
+            ]
+        };
+
+        // Platform mode switching
+        function switchMode(mode) {
+            if (currentMode === mode) return;
+            
+            currentMode = mode;
+            
+            // Update toggle buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('platform-toggle', 'text-white');
+                btn.classList.add('text-gray-600');
+            });
+            
+            const activeBtn = document.querySelector(`[data-mode="${mode}"]`);
+            activeBtn.classList.add('platform-toggle', 'text-white');
+            activeBtn.classList.remove('text-gray-600');
+            
+            // Switch navigation
+            if (mode === 'fan') {
+                document.querySelector('.fan-nav').classList.remove('hidden');
+                document.querySelector('.investor-nav').classList.add('hidden');
+                updateUserStatus('True Fan • Level 3');
+            } else {
+                document.querySelector('.fan-nav').classList.add('hidden');
+                document.querySelector('.investor-nav').classList.remove('hidden');
+                updateUserStatus('IP Investor • Portfolio: $12.4K');
+            }
+            
+            // Trigger mode transition animation
+            triggerModeTransition(mode);
+        }
+
+        function triggerModeTransition(mode) {
+            const body = document.body;
+            body.style.opacity = '0.9';
+            
+            setTimeout(() => {
+                body.style.opacity = '1';
+                // Update page content based on mode
+                updatePageContent(mode);
+            }, 150);
+        }
+
+        function updateUserStatus(status) {
+            document.getElementById('userStatus').textContent = status;
+        }
+
+        function updatePageContent(mode) {
+            // Update opportunities based on current mode
+            refreshOpportunities();
+            
+            // Update journey progress
+            updateJourneyProgress(mode);
+        }
+
+        // Notifications management
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationsDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function handleCrossNotification() {
+            // Handle cross-platform notification click
+            switchMode('investor');
+            window.location.href = '/xpages/ip_marketplace.html?creator=ai-music-algorithm&fan-access=true';
+        }
+
+        // Cross-platform opportunities
+        function refreshOpportunities() {
+            // Simulate dynamic opportunity updates
+            console.log(`Refreshing opportunities for ${currentMode} mode`);
+        }
+
+        function handleOpportunity(type) {
+            switch(type) {
+                case 'fan-to-investor':
+                    // Track analytics
+                    trackCrossAction('fan_to_investor_click');
+                    // Navigate with context
+                    window.location.href = '/xpages/ip_marketplace.html?opportunity=creator-ip&discount=fan';
+                    break;
+                case 'investor-to-fan':
+                    trackCrossAction('investor_to_fan_click');
+                    window.location.href = '/creators/digital-artist?vip=true';
+                    break;
+                case 'cross-reward':
+                    trackCrossAction('cross_reward_claim');
+                    claimCrossReward();
+                    break;
+            }
+        }
+
+        function claimCrossReward() {
+            // Simulate reward claiming
+            showNotification('Reward claimed! 500 loyalty points added to your account.', 'success');
+            
+            // Update UI to reflect claimed reward
+            setTimeout(() => {
+                const rewardCard = document.querySelector('[onclick*="cross-reward"]');
+                rewardCard.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check text-white text-sm"></i>
+                        </div>
+                        <span class="ml-2 text-sm font-medium text-green-800">Claimed</span>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Reward Claimed!</h4>
+                    <p class="text-sm text-gray-600 mb-4">500 loyalty points have been added to your account. Check back later for more rewards!</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-green-600">✓ Complete</span>
+                    </div>
+                `;
+                rewardCard.onclick = null;
+                rewardCard.classList.remove('cursor-pointer', 'hover:border-green-300');
+            }, 1000);
+        }
+
+        // Quick actions
+        function quickAction(action) {
+            switch(action) {
+                case 'discover':
+                    if (currentMode === 'fan') {
+                        window.location.href = '/creators';
+                    } else {
+                        window.location.href = '/xpages/ip_marketplace.html';
+                    }
+                    break;
+                case 'portfolio':
+                    if (currentMode === 'fan') {
+                        window.location.href = '/xpages/fan_dashboard.html';
+                    } else {
+                        window.location.href = '/xpages/ip_dashboard.html';
+                    }
+                    break;
+                case 'rewards':
+                    window.location.href = '/rewards';
+                    break;
+                case 'community':
+                    window.location.href = '/community';
+                    break;
+            }
+            trackCrossAction(`quick_action_${action}`);
+        }
+
+        // Banner management
+        function exploreCrossOpportunity() {
+            trackCrossAction('banner_explore_click');
+            switchMode('investor');
+            setTimeout(() => {
+                window.location.href = '/xpages/ip_marketplace.html?highlight=fan-benefits';
+            }, 300);
+        }
+
+        function dismissBanner() {
+            document.getElementById('crossPlatformBanner').style.display = 'none';
+            localStorage.setItem('crossBannerDismissed', 'true');
+        }
+
+        // Journey progress updates
+        function updateJourneyProgress(mode) {
+            // Update progress based on user's cross-platform activity
+            const progressLine = document.querySelector('.absolute.left-4.top-8.w-0\\.5.bg-gradient-to-b');
+            
+            if (mode === 'investor' && !userData.ipInvestor) {
+                // User is exploring investor mode for first time
+                progressLine.style.height = '70%';
+            }
+        }
+
+        // Analytics tracking
+        function trackCrossAction(action) {
+            // Send analytics to backend
+            console.log(`Cross-platform action: ${action} in ${currentMode} mode`);
+            
+            // Example API call
+            fetch('/api/analytics/cross-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action,
+                    mode: currentMode,
+                    userId: userData.name,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(console.error);
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if cross-platform banner should be shown
+            if (localStorage.getItem('crossBannerDismissed') === 'true') {
+                document.getElementById('crossPlatformBanner').style.display = 'none';
+            }
+            
+            // Close notifications when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('notificationsDropdown');
+                const button = event.target.closest('[onclick="toggleNotifications()"]');
+                
+                if (!button && !dropdown.contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+            
+            // Initialize with user's preferred mode (could come from localStorage or API)
+            const savedMode = localStorage.getItem('preferredMode') || 'fan';
+            switchMode(savedMode);
+        });
+
+        // Save mode preference
+        function saveMode(mode) {
+            localStorage.setItem('preferredMode', mode);
+        }
+    </script>
+</body>
+</html>

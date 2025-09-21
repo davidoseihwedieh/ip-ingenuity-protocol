@@ -1,0 +1,386 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+interface IIPTokenRegistry {
+    function getUserPortfolioValue(address user) external view returns (uint256);
+    function isIPHolder(address user) external view returns (bool);
+}
+
+contract CreatorBonds is ERC1155, Ownable, ReentrancyGuard {
+    using Counters for Counters.Counter;
+    
+    struct Subscription {
+        uint256 monthlyAmount;    // Amount in wei
+        uint256 durationMonths;   // Total subscription duration
+        uint256 startTime;        // Start timestamp
+        uint256 lastPayment;      // Last payment timestamp
+        bool active;              // Subscription status
+        uint256 fanLevel;         // Fan level (1-5)
+    }
+
+    struct CreatorBond {
+        address creator;          // Creator address
+        uint256 monthlyPrice;     // Base monthly subscription price
+        uint256 totalSubscribers; // Current subscriber count
+        uint256 monthlyRevenue;   // Current monthly revenue
+        string metadataURI;       // Creator metadata URI
+        bool active;              // Bond status
+        uint256 createdAt;        // Creation timestamp
+    }
+
+    struct FanLevel {
+        string name;              // Level name (Supporter, Fan, True Fan, etc.)
+        uint256 minTokens;        // Minimum tokens required
+        uint256 minMonths;        // Minimum subscription months
+        uint256 discountPercent;  // Discount percentage for this level
+        string[] perks;           // Array of perk descriptions
+    }
+
+    // State variables
+    Counters.Counter private _tokenIdCounter;
+    IIPTokenRegistry public ipTokenRegistry;
+    
+    mapping(uint256 => CreatorBond) public creatorBonds;
+    mapping(address => mapping(uint256 => Subscription)) public subscriptions;
+    mapping(address => uint256) public userFanScores; // Cross-platform fan score
+    mapping(uint256 => FanLevel) public fanLevels;
+    mapping(address => uint256[]) public userSubscriptions; // User's active subscriptions
+    
+    // Platform fees
+    uint256 public platformFeePercent = 10; // 10% to platform
+    uint256 public holderFeePercent = 20;   // 20% to token holders
+    uint256 public creatorFeePercent = 70;  // 70% to creator
+    
+    // Cross-platform integration
+    mapping(address => bool) public ipInvestorDiscounts; // Discounts for IP investors
+    uint256 public ipInvestorDiscountPercent = 15; // 15% discount for IP investors
+
+    // Events
+    event BondCreated(uint256 indexed tokenId, address indexed creator, uint256 monthlyPrice);
+    event SubscriptionCreated(address indexed fan, uint256 indexed tokenId, uint256 amount);
+    event SubscriptionRenewed(address indexed fan, uint256 indexed tokenId, uint256 amount);
+    event SubscriptionCancelled(address indexed fan, uint256 indexed tokenId);
+    event FanLevelUpdated(address indexed fan, uint256 newLevel);
+    event RevenueDistributed(uint256 indexed tokenId, uint256 amount);
+
+    constructor(address _ipTokenRegistry) 
+        ERC1155("https://ip-ingenuity-protocol.vercel.app/api/creator-metadata/{id}.json") 
+    {
+        ipTokenRegistry = IIPTokenRegistry(_ipTokenRegistry);
+        _initializeFanLevels();
+    }
+
+    function _initializeFanLevels() private {
+        // Level 1: Supporter
+        fanLevels[1] = FanLevel({
+            name: "Supporter",
+            minTokens: 0,
+            minMonths: 0,
+            discountPercent: 0,
+            perks: new string[](0)
+        });
+
+        // Level 2: Fan  
+        fanLevels[2] = FanLevel({
+            name: "Fan",
+            minTokens: 20,
+            minMonths: 3,
+            discountPercent: 5,
+            perks: new string[](0)
+        });
+
+        // Level 3: True Fan
+        fanLevels[3] = FanLevel({
+            name: "True Fan", 
+            minTokens: 40,
+            minMonths: 6,
+            discountPercent: 10,
+            perks: new string[](0)
+        });
+
+        // Level 4: Patron
+        fanLevels[4] = FanLevel({
+            name: "Patron",
+            minTokens: 60, 
+            minMonths: 9,
+            discountPercent: 15,
+            perks: new string[](0)
+        });
+
+        // Level 5: Superfan
+        fanLevels[5] = FanLevel({
+            name: "Superfan",
+            minTokens: 80,
+            minMonths: 12,
+            discountPercent: 20,
+            perks: new string[](0)
+        });
+    }
+
+    // Creator creates a new bond token
+    function createBondToken(
+        uint256 monthlyPrice,
+        string memory metadataURI
+    ) external returns (uint256) {
+        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter.current();
+
+        creatorBonds[tokenId] = CreatorBond({
+            creator: msg.sender,
+            monthlyPrice: monthlyPrice,
+            totalSubscribers: 0,
+            monthlyRevenue: 0,
+            metadataURI: metadataURI,
+            active: true,
+            createdAt: block.timestamp
+        });
+
+        _mint(msg.sender, tokenId, 1000, ""); // Mint 1000 creator tokens
+        
+        emit BondCreated(tokenId, msg.sender, monthlyPrice);
+        return tokenId;
+    }
+
+    // Fan subscribes to a creator bond with dynamic pricing
+    function subscribe(uint256 tokenId) external payable nonReentrant {
+        require(creatorBonds[tokenId].active, "Bond not active");
+        require(!subscriptions[msg.sender][tokenId].active, "Already subscribed");
+
+        uint256 finalPrice = calculateSubscriptionPrice(tokenId, msg.sender);
+        require(msg.value >= finalPrice, "Insufficient payment");
+
+        // Create subscription
+        subscriptions[msg.sender][tokenId] = Subscription({
+            monthlyAmount: finalPrice,
+            durationMonths: 12,
+            startTime: block.timestamp,
+            lastPayment: block.timestamp,
+            active: true,
+            fanLevel: calculateFanLevel(msg.sender)
+        });
+
+        // Update creator bond stats
+        creatorBonds[tokenId].totalSubscribers++;
+        creatorBonds[tokenId].monthlyRevenue += finalPrice;
+
+        // Add to user's subscriptions
+        userSubscriptions[msg.sender].push(tokenId);
+
+        // Distribute payment
+        _distributePayment(tokenId, msg.value);
+
+        // Award fan tokens (loyalty program)
+        _mint(msg.sender, tokenId, 10, ""); // Award 10 fan tokens
+
+        // Update fan score for cross-platform benefits
+        _updateFanScore(msg.sender, 100);
+
+        emit SubscriptionCreated(msg.sender, tokenId, finalPrice);
+    }
+
+    // Calculate subscription price with discounts
+    function calculateSubscriptionPrice(uint256 tokenId, address fan) public view returns (uint256) {
+        uint256 basePrice = creatorBonds[tokenId].monthlyPrice;
+        uint256 discount = 0;
+
+        // Fan level discount
+        uint256 fanLevel = calculateFanLevel(fan);
+        if (fanLevel > 0) {
+            discount += fanLevels[fanLevel].discountPercent;
+        }
+
+        // IP investor discount (cross-platform benefit)
+        if (ipTokenRegistry.isIPHolder(fan)) {
+            discount += ipInvestorDiscountPercent;
+        }
+
+        // Cap discount at 50%
+        discount = discount > 50 ? 50 : discount;
+        
+        return basePrice * (100 - discount) / 100;
+    }
+
+    // Calculate fan level based on cross-platform activity
+    function calculateFanLevel(address fan) public view returns (uint256) {
+        uint256 totalTokens = 0;
+        uint256 totalMonths = 0;
+
+        // Calculate total tokens held across all creator bonds
+        for (uint256 i = 1; i <= _tokenIdCounter.current(); i++) {
+            totalTokens += balanceOf(fan, i);
+            
+            if (subscriptions[fan][i].active) {
+                totalMonths += (block.timestamp - subscriptions[fan][i].startTime) / 30 days;
+            }
+        }
+
+        // Add IP platform activity bonus
+        if (ipTokenRegistry.isIPHolder(fan)) {
+            totalTokens += 20; // Bonus tokens for IP investors
+        }
+
+        // Determine level
+        for (uint256 level = 5; level >= 1; level--) {
+            if (totalTokens >= fanLevels[level].minTokens && 
+                totalMonths >= fanLevels[level].minMonths) {
+                return level;
+            }
+        }
+        return 1; // Default to Supporter level
+    }
+
+    // Renew subscription with automatic level updates
+    function renewSubscription(uint256 tokenId) external payable nonReentrant {
+        Subscription storage sub = subscriptions[msg.sender][tokenId];
+        require(sub.active, "No active subscription");
+        
+        uint256 finalPrice = calculateSubscriptionPrice(tokenId, msg.sender);
+        require(msg.value >= finalPrice, "Insufficient payment");
+
+        // Update subscription
+        sub.lastPayment = block.timestamp;
+        sub.monthlyAmount = finalPrice;
+        
+        // Update fan level
+        uint256 newLevel = calculateFanLevel(msg.sender);
+        if (newLevel != sub.fanLevel) {
+            sub.fanLevel = newLevel;
+            emit FanLevelUpdated(msg.sender, newLevel);
+        }
+
+        // Distribute payment
+        _distributePayment(tokenId, msg.value);
+
+        // Award loyalty tokens
+        _mint(msg.sender, tokenId, 5, "");
+
+        // Update fan score
+        _updateFanScore(msg.sender, 50);
+
+        emit SubscriptionRenewed(msg.sender, tokenId, finalPrice);
+    }
+
+    // Cancel subscription
+    function cancelSubscription(uint256 tokenId) external {
+        Subscription storage sub = subscriptions[msg.sender][tokenId];
+        require(sub.active, "No active subscription");
+
+        sub.active = false;
+        creatorBonds[tokenId].totalSubscribers--;
+        creatorBonds[tokenId].monthlyRevenue -= sub.monthlyAmount;
+
+        // Remove from user's active subscriptions
+        _removeFromUserSubscriptions(msg.sender, tokenId);
+
+        emit SubscriptionCancelled(msg.sender, tokenId);
+    }
+
+    // Distribute payment to stakeholders
+    function _distributePayment(uint256 tokenId, uint256 amount) private {
+        address creator = creatorBonds[tokenId].creator;
+        
+        uint256 creatorShare = amount * creatorFeePercent / 100;
+        uint256 platformShare = amount * platformFeePercent / 100;
+        uint256 holderShare = amount * holderFeePercent / 100;
+
+        // Transfer to creator
+        (bool success, ) = payable(creator).call{value: creatorShare}("");
+        require(success, "Creator payment failed");
+
+        // Transfer to platform (owner)
+        (success, ) = payable(owner()).call{value: platformShare}("");
+        require(success, "Platform payment failed");
+
+        // Store holder share for distribution
+        // (Implementation depends on your holder distribution mechanism)
+    }
+
+    // Update cross-platform fan score
+    function _updateFanScore(address fan, uint256 points) private {
+        userFanScores[fan] += points;
+        
+        // Award cross-platform benefits based on score milestones
+        if (userFanScores[fan] >= 1000 && !ipInvestorDiscounts[fan]) {
+            ipInvestorDiscounts[fan] = true; // Unlock IP investor benefits
+        }
+    }
+
+    // Remove token from user's subscription list
+    function _removeFromUserSubscriptions(address user, uint256 tokenId) private {
+        uint256[] storage subs = userSubscriptions[user];
+        for (uint256 i = 0; i < subs.length; i++) {
+            if (subs[i] == tokenId) {
+                subs[i] = subs[subs.length - 1];
+                subs.pop();
+                break;
+            }
+        }
+    }
+
+    // View functions for frontend integration
+    function getUserSubscriptions(address user) external view returns (uint256[] memory) {
+        return userSubscriptions[user];
+    }
+
+    function getCreatorBond(uint256 tokenId) external view returns (CreatorBond memory) {
+        return creatorBonds[tokenId];
+    }
+
+    function getUserFanLevel(address user) external view returns (uint256, string memory) {
+        uint256 level = calculateFanLevel(user);
+        return (level, fanLevels[level].name);
+    }
+
+    function getFanLevelInfo(uint256 level) external view returns (FanLevel memory) {
+        return fanLevels[level];
+    }
+
+    // Admin functions
+    function updateIPTokenRegistry(address _newRegistry) external onlyOwner {
+        ipTokenRegistry = IIPTokenRegistry(_newRegistry);
+    }
+
+    function updateFeeStructure(
+        uint256 _platformFee,
+        uint256 _holderFee, 
+        uint256 _creatorFee
+    ) external onlyOwner {
+        require(_platformFee + _holderFee + _creatorFee == 100, "Fees must sum to 100");
+        platformFeePercent = _platformFee;
+        holderFeePercent = _holderFee;
+        creatorFeePercent = _creatorFee;
+    }
+
+    function emergencyPause(uint256 tokenId) external onlyOwner {
+        creatorBonds[tokenId].active = false;
+    }
+
+    // Batch operations for gas efficiency
+    function batchRenewSubscriptions(uint256[] calldata tokenIds) external payable nonReentrant {
+        uint256 totalRequired = 0;
+        
+        // Calculate total payment required
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            totalRequired += calculateSubscriptionPrice(tokenIds[i], msg.sender);
+        }
+        
+        require(msg.value >= totalRequired, "Insufficient payment for batch renewal");
+        
+        // Process renewals
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            uint256 price = calculateSubscriptionPrice(tokenId, msg.sender);
+            
+            // Update subscription (simplified for batch)
+            subscriptions[msg.sender][tokenId].lastPayment = block.timestamp;
+            _distributePayment(tokenId, price);
+            
+            emit SubscriptionRenewed(msg.sender, tokenId, price);
+        }
+    }
+}
