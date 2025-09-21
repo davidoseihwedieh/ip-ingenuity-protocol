@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CreatorBonds is ERC1155, Ownable {
+    struct Subscription {
+        uint256 monthlyAmount; // Amount in wei
+        uint256 durationMonths; // Total subscription duration
+        uint256 startTime; // Start timestamp
+        bool active; // Subscription status
+    }
+
+    mapping(address => mapping(uint256 => Subscription)) public subscriptions; // fan -> tokenId -> subscription
+    mapping(uint256 => address) public tokenCreators; // tokenId -> creator address
+    mapping(uint256 => uint256) public tokenMonthlyRevenue; // tokenId -> total monthly revenue
+    uint256 public nextTokenId;
+
+    constructor() ERC1155("https://ip-ingenuity-protocol.vercel.app/api/metadata/{id}.json") Ownable() {
+        nextTokenId = 1;
+    }
+
+    // Creator creates a new bond token with subscription details
+    function createBondToken(uint256 monthlyAmount, uint256 durationMonths) external {
+        uint256 tokenId = nextTokenId++;
+        tokenCreators[tokenId] = msg.sender;
+        _mint(msg.sender, tokenId, 1, "");
+    }
+
+    // Fan subscribes to a bond token
+    function subscribe(uint256 tokenId) external payable {
+        require(tokenCreators[tokenId] != address(0), "Invalid token");
+        require(msg.value >= 0.01 ether, "Minimum subscription amount"); // Example: 0.01 ETH
+        require(!subscriptions[msg.sender][tokenId].active, "Already subscribed");
+
+        subscriptions[msg.sender][tokenId] = Subscription({
+            monthlyAmount: msg.value,
+            durationMonths: 12, // Default 12 months, customizable
+            startTime: block.timestamp,
+            active: true
+        });
+
+        tokenMonthlyRevenue[tokenId] += msg.value;
+        payable(tokenCreators[tokenId]).transfer(msg.value * 70 / 100); // 70% to creator
+        // 20% to other token holders, 10% to platform (handled in separate function)
+    }
+
+    // Renew subscription (called monthly by off-chain service or fan)
+    function renewSubscription(uint256 tokenId) external payable {
+        Subscription storage sub = subscriptions[msg.sender][tokenId];
+        require(sub.active, "No active subscription");
+        require(block.timestamp < sub.startTime + sub.durationMonths * 30 days, "Subscription expired");
+        require(msg.value >= sub.monthlyAmount, "Insufficient payment");
+
+        tokenMonthlyRevenue[tokenId] += msg.value;
+        payable(tokenCreators[tokenId]).transfer(msg.value * 70 / 100);
+    }
+
+    // Cancel subscription
+    function cancelSubscription(uint256 tokenId) external {
+        Subscription storage sub = subscriptions[msg.sender][tokenId];
+        require(sub.active, "No active subscription");
+        sub.active = false;
+        tokenMonthlyRevenue[tokenId] -= sub.monthlyAmount;
+    }
+
+    // Distribute revenue to token holders (called by off-chain cron job)
+    function distributeRevenue(uint256 tokenId) external onlyOwner {
+        uint256 revenue = tokenMonthlyRevenue[tokenId] * 20 / 100; // 20% to token holders
+        // Logic to distribute to token holders (simplified)
+        // In practice, use balanceOf to iterate over holders
+    }
+}
