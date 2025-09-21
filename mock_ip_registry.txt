@@ -1,0 +1,129 @@
+// contracts/MockIPTokenRegistry.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title MockIPTokenRegistry
+ * @dev Mock contract for testing CreatorBonds integration
+ * In production, this would be your actual IP tokenization registry
+ */
+contract MockIPTokenRegistry is Ownable {
+    
+    mapping(address => uint256) public userPortfolioValues;
+    mapping(address => bool) public ipHolders;
+    mapping(address => uint256[]) public userIPTokens;
+    
+    // Mock IP tokens for testing
+    struct IPToken {
+        uint256 id;
+        string name;
+        address creator;
+        uint256 value;
+        bool active;
+    }
+    
+    mapping(uint256 => IPToken) public ipTokens;
+    uint256 public tokenCounter;
+    
+    event IPHolderAdded(address indexed user, uint256 portfolioValue);
+    event IPTokenCreated(uint256 indexed tokenId, string name, address creator);
+    
+    constructor() {
+        // Initialize with some test data
+        _createMockIPTokens();
+    }
+    
+    function _createMockIPTokens() private {
+        // Mock IP Token 1: AI Music Algorithm
+        tokenCounter++;
+        ipTokens[tokenCounter] = IPToken({
+            id: tokenCounter,
+            name: "AI Music Composition Algorithm",
+            creator: msg.sender,
+            value: 485000, // $485K value
+            active: true
+        });
+        emit IPTokenCreated(tokenCounter, "AI Music Composition Algorithm", msg.sender);
+        
+        // Mock IP Token 2: Solar Panel Design
+        tokenCounter++;
+        ipTokens[tokenCounter] = IPToken({
+            id: tokenCounter,
+            name: "High-Efficiency Solar Panel Design", 
+            creator: msg.sender,
+            value: 750000, // $750K value
+            active: true
+        });
+        emit IPTokenCreated(tokenCounter, "High-Efficiency Solar Panel Design", msg.sender);
+        
+        // Mock IP Token 3: Digital Dreams Score
+        tokenCounter++;
+        ipTokens[tokenCounter] = IPToken({
+            id: tokenCounter,
+            name: "Digital Dreams Film Score",
+            creator: msg.sender,
+            value: 125000, // $125K value
+            active: true
+        });
+        emit IPTokenCreated(tokenCounter, "Digital Dreams Film Score", msg.sender);
+    }
+    
+    // Mock function to simulate user having IP investments
+    function addIPHolder(address user, uint256 portfolioValue) external onlyOwner {
+        ipHolders[user] = true;
+        userPortfolioValues[user] = portfolioValue;
+        
+        // Assign some mock tokens to the user
+        userIPTokens[user].push(1); // AI Music Algorithm
+        userIPTokens[user].push(3); // Digital Dreams Score
+        
+        emit IPHolderAdded(user, portfolioValue);
+    }
+    
+    // Interface function for CreatorBonds integration
+    function getUserPortfolioValue(address user) external view returns (uint256) {
+        return userPortfolioValues[user];
+    }
+    
+    // Interface function for CreatorBonds integration  
+    function isIPHolder(address user) external view returns (bool) {
+        return ipHolders[user];
+    }
+    
+    // Get user's IP tokens
+    function getUserIPTokens(address user) external view returns (uint256[] memory) {
+        return userIPTokens[user];
+    }
+    
+    // Get IP token details
+    function getIPToken(uint256 tokenId) external view returns (IPToken memory) {
+        return ipTokens[tokenId];
+    }
+    
+    // Simulate IP token purchase (for testing cross-platform integration)
+    function simulateIPPurchase(address user, uint256 tokenId, uint256 amount) external onlyOwner {
+        require(ipTokens[tokenId].active, "IP token not active");
+        
+        if (!ipHolders[user]) {
+            ipHolders[user] = true;
+        }
+        
+        userPortfolioValues[user] += amount;
+        userIPTokens[user].push(tokenId);
+    }
+    
+    // Update portfolio value (for testing price changes)
+    function updatePortfolioValue(address user, uint256 newValue) external onlyOwner {
+        userPortfolioValues[user] = newValue;
+    }
+    
+    // For testing: simulate a user becoming an IP investor
+    function makeUserIPInvestor(address user) external {
+        // Anyone can call this for testing purposes
+        ipHolders[user] = true;
+        userPortfolioValues[user] = 50000; // $50K portfolio
+        userIPTokens[user].push(1); // Give them the AI Music token
+    }
+}
