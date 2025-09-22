@@ -1,0 +1,827 @@
+// mobile/App.js - Main React Native App
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar, Alert, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import messaging from '@react-native-firebase/messaging';
+import notifee, { AndroidImportance } from '@notifee/react-native';
+import SplashScreen from 'react-native-splash-screen';
+
+// Contexts
+import { AuthProvider } from './src/contexts/AuthContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
+import { SyncProvider } from './src/contexts/SyncContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+
+// Navigation
+import AuthNavigator from './src/navigation/AuthNavigator';
+import MainTabNavigator from './src/navigation/MainTabNavigator';
+
+// Services
+import { AuthService } from './src/services/AuthService';
+import { NotificationService } from './src/services/NotificationService';
+import { SyncService } from './src/services/SyncService';
+
+// Components
+import LoadingScreen from './src/components/LoadingScreen';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+const App = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    initializeApp();
+    
+    // Hide splash screen after initialization
+    const timer = setTimeout(() => {
+      SplashScreen.hide();
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const initializeApp = async () => {
+    try {
+      // Check authentication status
+      const authToken = await AuthService.getStoredToken();
+      if (authToken) {
+        const userData = await AuthService.validateToken(authToken);
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
+          
+          // Initialize services for authenticated user
+          await initializeUserServices(userData);
+        }
+      }
+
+      // Initialize push notifications
+      await initializePushNotifications();
+      
+      // Setup background sync
+      await SyncService.initializeBackgroundSync();
+
+    } catch (error) {
+      console.error('App initialization error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initializeUserServices = async (userData) => {
+    try {
+      // Initialize sync service
+      await SyncService.initialize(userData.id);
+      
+      // Start real-time sync
+      SyncService.startRealTimeSync();
+      
+      // Initialize notifications
+      await NotificationService.initialize(userData.id);
+      
+    } catch (error) {
+      console.error('User services initialization error:', error);
+    }
+  };
+
+  const initializePushNotifications = async () => {
+    try {
+      // Request notification permissions
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      if (enabled) {
+        console.log('Push notification permission granted');
+        
+        // Get FCM token
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          await NotificationService.registerDevice(fcmToken, Platform.OS);
+        }
+
+        // Setup notification channels (Android)
+        if (Platform.OS === 'android') {
+          await notifee.createChannel({
+            id: 'default',
+            name: 'Default Channel',
+            importance: AndroidImportance.HIGH,
+          });
+        }
+
+        // Handle foreground notifications
+        messaging().onMessage(async remoteMessage => {
+          await NotificationService.handleForegroundNotification(remoteMessage);
+        });
+
+        // Handle background/quit state notifications
+        messaging().setBackgroundMessageHandler(async remoteMessage => {
+          await NotificationService.handleBackgroundNotification(remoteMessage);
+        });
+
+        // Handle notification opened app
+        messaging().onNotificationOpenedApp(remoteMessage => {
+          NotificationService.handleNotificationPress(remoteMessage);
+        });
+
+        // Check if app was opened from notification (app was quit)
+        const initialNotification = await messaging().getInitialNotification();
+        if (initialNotification) {
+          NotificationService.handleNotificationPress(initialNotification);
+        }
+      }
+    } catch (error) {
+      console.error('Push notification setup error:', error);
+    }
+  };
+
+  const handleLogin = async (userData, token) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+    
+    // Save token
+    await AuthService.storeToken(token);
+    
+    // Initialize user services
+    await initializeUserServices(userData);
+  };
+
+  const handleLogout = async () => {
+    // Cleanup services
+    SyncService.cleanup();
+    NotificationService.cleanup();
+    
+    // Clear auth data
+    await AuthService.clearToken();
+    
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <AuthProvider value={{ user, isAuthenticated, onLogin: handleLogin, onLogout: handleLogout }}>
+              <NotificationProvider>
+                <SyncProvider>
+                  <NavigationContainer>
+                    <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+                    {isAuthenticated ? (
+                      <MainTabNavigator user={user} />
+                    ) : (
+                      <AuthNavigator onLogin={handleLogin} />
+                    )}
+                  </NavigationContainer>
+                </SyncProvider>
+              </NotificationProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
+  );
+};
+
+export default App;
+
+// ================================
+// src/navigation/MainTabNavigator.js - Main App Navigation
+// ================================
+
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import Icon from 'react-native-vector-icons/Feather';
+
+// Screens
+import DashboardScreen from '../screens/DashboardScreen';
+import BondsScreen from '../screens/BondsScreen';
+import CreateBondScreen from '../screens/CreateBondScreen';
+import BondDetailsScreen from '../screens/BondDetailsScreen';
+import SupportBondScreen from '../screens/SupportBondScreen';
+import IPTokensScreen from '../screens/IPTokensScreen';
+import CreateTokenScreen from '../screens/CreateTokenScreen';
+import TokenDetailsScreen from '../screens/TokenDetailsScreen';
+import CommunityScreen from '../screens/CommunityScreen';
+import CreatorProfileScreen from '../screens/CreatorProfileScreen';
+import WalletScreen from '../screens/WalletScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// Stack Navigators for each tab
+const DashboardStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DashboardMain" component={DashboardScreen} />
+    <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
+  </Stack.Navigator>
+);
+
+const BondsStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="BondsList" component={BondsScreen} />
+    <Stack.Screen name="CreateBond" component={CreateBondScreen} />
+    <Stack.Screen name="BondDetails" component={BondDetailsScreen} />
+    <Stack.Screen name="SupportBond" component={SupportBondScreen} />
+  </Stack.Navigator>
+);
+
+const TokensStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="TokensList" component={IPTokensScreen} />
+    <Stack.Screen name="CreateToken" component={CreateTokenScreen} />
+    <Stack.Screen name="TokenDetails" component={TokenDetailsScreen} />
+  </Stack.Navigator>
+);
+
+const CommunityStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="CommunityMain" component={CommunityScreen} />
+    <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
+  </Stack.Navigator>
+);
+
+const ProfileStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+    <Stack.Screen name="Settings" component={SettingsScreen} />
+    <Stack.Screen name="Wallet" component={WalletScreen} />
+  </Stack.Navigator>
+);
+
+const MainTabNavigator = ({ user }) => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          switch (route.name) {
+            case 'Dashboard':
+              iconName = 'home';
+              break;
+            case 'Bonds':
+              iconName = 'dollar-sign';
+              break;
+            case 'Tokens':
+              iconName = 'shield';
+              break;
+            case 'Community':
+              iconName = 'users';
+              break;
+            case 'Profile':
+              iconName = 'user';
+              break;
+            default:
+              iconName = 'circle';
+          }
+
+          return <Icon name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#6366f1',
+        tabBarInactiveTintColor: '#9ca3af',
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: '#e5e7eb',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardStack}
+        options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen 
+        name="Bonds" 
+        component={BondsStack}
+        options={{ tabBarLabel: 'Bonds' }}
+      />
+      <Tab.Screen 
+        name="Tokens" 
+        component={TokensStack}
+        options={{ tabBarLabel: 'IP Tokens' }}
+      />
+      <Tab.Screen 
+        name="Community" 
+        component={CommunityStack}
+        options={{ tabBarLabel: 'Community' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileStack}
+        options={{ tabBarLabel: 'Profile' }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export default MainTabNavigator;
+
+// ================================
+// src/screens/DashboardScreen.js - Dashboard Implementation
+// ================================
+
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Feather';
+
+// Components
+import Header from '../components/Header';
+import StatsCard from '../components/StatsCard';
+import BondCard from '../components/BondCard';
+import TokenCard from '../components/TokenCard';
+import RecommendationCard from '../components/RecommendationCard';
+import NotificationBadge from '../components/NotificationBadge';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+// Services
+import { APIService } from '../services/APIService';
+import { AnalyticsService } from '../services/AnalyticsService';
+
+// Hooks
+import { useAuth } from '../hooks/useAuth';
+import { useSync } from '../hooks/useSync';
+import { useNotifications } from '../hooks/useNotifications';
+
+const { width } = Dimensions.get('window');
+
+const DashboardScreen = ({ navigation }) => {
+  const { user } = useAuth();
+  const { syncData, isSync
+ing } = useSync();
+  const { unreadCount } = useNotifications();
+  
+  const [dashboardData, setDashboardData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+      
+      // Track screen view
+      AnalyticsService.trackEvent('screen_view', {
+        screen_name: 'dashboard',
+        user_id: user?.id
+      });
+    }, [user])
+  );
+
+  const loadDashboardData = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      
+      setError(null);
+
+      // Fetch dashboard data from API
+      const response = await APIService.get('/analytics/dashboard', {
+        timeRange: '30d'
+      });
+
+      if (response.success) {
+        setDashboardData(response.data);
+        
+        // Trigger sync if needed
+        if (response.data.needsSync) {
+          syncData();
+        }
+      } else {
+        throw new Error(response.message || 'Failed to load dashboard');
+      }
+
+    } catch (error) {
+      console.error('Dashboard load error:', error);
+      setError(error.message);
+      
+      Alert.alert(
+        'Error',
+        'Failed to load dashboard data. Pull to refresh to try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    loadDashboardData(true);
+  };
+
+  const navigateToNotifications = () => {
+    navigation.navigate('Notifications');
+  };
+
+  const navigateToAnalytics = () => {
+    navigation.navigate('Analytics');
+  };
+
+  const navigateToCreateBond = () => {
+    navigation.navigate('Bonds', { screen: 'CreateBond' });
+  };
+
+  const navigateToCreateToken = () => {
+    navigation.navigate('Tokens', { screen: 'CreateToken' });
+  };
+
+  const navigateToBondDetails = (bondId) => {
+    navigation.navigate('Bonds', { 
+      screen: 'BondDetails', 
+      params: { bondId } 
+    });
+  };
+
+  const navigateToTokenDetails = (tokenId) => {
+    navigation.navigate('Tokens', { 
+      screen: 'TokenDetails', 
+      params: { tokenId } 
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Header 
+          title="Dashboard"
+          rightComponent={<NotificationBadge count={unreadCount} onPress={navigateToNotifications} />}
+        />
+        <View style={styles.loadingContainer}>
+          <LoadingSpinner size="large" />
+          <Text style={styles.loadingText}>Loading your dashboard...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error && !dashboardData) {
+    return (
+      <View style={styles.container}>
+        <Header 
+          title="Dashboard"
+          rightComponent={<NotificationBadge count={unreadCount} onPress={navigateToNotifications} />}
+        />
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={48} color="#ef4444" />
+          <Text style={styles.errorTitle}>Unable to load dashboard</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => loadDashboardData()}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const analytics = dashboardData?.analytics || {};
+  const recommendations = dashboardData?.recommendations || [];
+  const recentBonds = analytics.bonds?.recent || [];
+  const recentTokens = analytics.tokens?.recent || [];
+
+  return (
+    <View style={styles.container}>
+      <Header 
+        title="Dashboard"
+        rightComponent={<NotificationBadge count={unreadCount} onPress={navigateToNotifications} />}
+      />
+      
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={['#6366f1']}
+            tintColor="#6366f1"
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Welcome Section */}
+        <LinearGradient
+          colors={['#6366f1', '#8b5cf6']}
+          style={styles.welcomeSection}
+        >
+          <Text style={styles.welcomeText}>Welcome back, {user?.displayName}!</Text>
+          <Text style={styles.welcomeSubtext}>
+            {user?.role === 'CREATOR' ? 'Create and manage your bonds' : 'Discover amazing projects to support'}
+          </Text>
+          {isSyncing && (
+            <View style={styles.syncIndicator}>
+              <LoadingSpinner size="small" color="#ffffff" />
+              <Text style={styles.syncText}>Syncing your data...</Text>
+            </View>
+          )}
+        </LinearGradient>
+
+        {/* Quick Stats */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Overview</Text>
+          <View style={styles.statsGrid}>
+            <StatsCard
+              title="Total Bonds"
+              value={analytics.bonds?.totalBonds || 0}
+              icon="dollar-sign"
+              color="#10b981"
+            />
+            <StatsCard
+              title="Total Revenue"
+              value={`${analytics.revenue?.totalRevenue || 0} ETH`}
+              icon="trending-up"
+              color="#6366f1"
+            />
+            <StatsCard
+              title="Active Supporters"
+              value={analytics.engagement?.totalSupporters || 0}
+              icon="users"
+              color="#f59e0b"
+            />
+            <StatsCard
+              title="Engagement Rate"
+              value={`${((analytics.engagement?.engagementRate || 0) * 100).toFixed(1)}%`}
+              icon="heart"
+              color="#ef4444"
+              onPress={navigateToAnalytics}
+            />
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.actionsSection}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.actionButton} onPress={navigateToCreateBond}>
+              <LinearGradient colors={['#6366f1', '#8b5cf6']} style={styles.actionButtonGradient}>
+                <Icon name="plus" size={24} color="#ffffff" />
+                <Text style={styles.actionButtonText}>Create Bond</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.actionButton} onPress={navigateToCreateToken}>
+              <LinearGradient colors={['#10b981', '#059669']} style={styles.actionButtonGradient}>
+                <Icon name="shield" size={24} color="#ffffff" />
+                <Text style={styles.actionButtonText}>Mint Token</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Recent Bonds */}
+        {recentBonds.length > 0 && (
+          <View style={styles.bondsSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Bonds</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Bonds')}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {recentBonds.map((bond) => (
+                <BondCard
+                  key={bond.id}
+                  bond={bond}
+                  onPress={() => navigateToBondDetails(bond.id)}
+                  style={styles.horizontalCard}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Recent Tokens */}
+        {recentTokens.length > 0 && (
+          <View style={styles.tokensSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent IP Tokens</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Tokens')}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {recentTokens.map((token) => (
+                <TokenCard
+                  key={token.id}
+                  token={token}
+                  onPress={() => navigateToTokenDetails(token.id)}
+                  style={styles.horizontalCard}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Recommendations */}
+        {recommendations.length > 0 && (
+          <View style={styles.recommendationsSection}>
+            <Text style={styles.sectionTitle}>Recommended for You</Text>
+            {recommendations.slice(0, 3).map((recommendation, index) => (
+              <RecommendationCard
+                key={index}
+                recommendation={recommendation}
+                onPress={() => {
+                  if (recommendation.type === 'bond') {
+                    navigateToBondDetails(recommendation.id);
+                  } else if (recommendation.type === 'token') {
+                    navigateToTokenDetails(recommendation.id);
+                  }
+                }}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  welcomeSection: {
+    margin: 16,
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  welcomeSubtext: {
+    fontSize: 16,
+    color: '#e0e7ff',
+    textAlign: 'center',
+  },
+  syncIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  syncText: {
+    color: '#ffffff',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  statsSection: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionsSection: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  actionButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  actionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  bondsSection: {
+    marginBottom: 24,
+  },
+  tokensSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: '#6366f1',
+    fontWeight: '600',
+  },
+  horizontalCard: {
+    marginLeft: 16,
+    width: width * 0.7,
+  },
+  recommendationsSection: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  bottomSpacing: {
+    height: 32,
+  },
+});
+
+export default DashboardScreen;
