@@ -1,0 +1,1096 @@
+# docker-compose.production.yml - Production Infrastructure
+version: '3.8'
+
+services:
+  # Load Balancer / Reverse Proxy
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - ./traefik:/etc/traefik
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.yourdomain.com`)
+      - traefik.http.routers.traefik.tls.certresolver=letsencrypt
+
+  # Frontend Application
+  frontend:
+    image: creatorbonds/frontend:${VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=https://api.yourdomain.com
+      - REACT_APP_WS_URL=wss://api.yourdomain.com
+      - REACT_APP_SENTRY_DSN=${SENTRY_DSN}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`yourdomain.com`) || Host(`www.yourdomain.com`)
+      - traefik.http.routers.frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    networks:
+      - web
+    depends_on:
+      - api
+
+  # API Backend (Multiple instances for load balancing)
+  api:
+    image: creatorbonds/backend:${VERSION:-latest}
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - FIREBASE_ADMIN_KEY=${FIREBASE_ADMIN_KEY}
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - LOG_LEVEL=info
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`api.yourdomain.com`)
+      - traefik.http.routers.api.tls.certresolver=letsencrypt
+      - traefik.http.services.api.loadbalancer.server.port=3001
+      - traefik.http.services.api.loadbalancer.healthcheck.path=/health
+    networks:
+      - web
+      - backend
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Database Cluster (Primary)
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./backups:/backups
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Database Replica (Read-only)
+  postgres-replica:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGUSER=${DB_USER}
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    depends_on:
+      - postgres
+
+  # Redis Cluster
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - backend
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Sentinel (High Availability)
+  redis-sentinel:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    volumes:
+      - ./redis/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    networks:
+      - backend
+    depends_on:
+      - redis
+
+  # Background Job Workers
+  worker:
+    image: creatorbonds/backend:${VERSION:-latest}
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+    environment:
+      - NODE_ENV=production
+      - WORKER_MODE=true
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - LOG_LEVEL=info
+    command: node server/worker.js
+    networks:
+      - backend
+    depends_on:
+      - postgres
+      - redis
+
+  # Monitoring & Observability
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+  # Log Aggregation
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/loki.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring
+
+  # Backup Service
+  backup:
+    image: creatorbonds/backup:latest
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - S3_BUCKET=${BACKUP_S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - ./backups:/backups
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+
+networks:
+  web:
+    external: true
+  backend:
+    internal: true
+  monitoring:
+    internal: true
+
+---
+# kubernetes/namespace.yaml - Kubernetes Deployment (Alternative)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: creatorbonds
+  labels:
+    name: creatorbonds
+
+---
+# kubernetes/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: creatorbonds-config
+  namespace: creatorbonds
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  REDIS_URL: "redis://redis-service:6379"
+
+---
+# kubernetes/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: creatorbonds-secrets
+  namespace: creatorbonds
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql://user:password@postgres-service:5432/creatorbonds"
+  JWT_SECRET: "your-production-jwt-secret"
+  VAPID_PRIVATE_KEY: "your-vapid-private-key"
+  FIREBASE_ADMIN_KEY: '{"type": "service_account"}'
+
+---
+# kubernetes/backend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: creatorbonds-backend
+  namespace: creatorbonds
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: creatorbonds-backend
+  template:
+    metadata:
+      labels:
+        app: creatorbonds-backend
+    spec:
+      containers:
+      - name: backend
+        image: creatorbonds/backend:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: creatorbonds-config
+              key: NODE_ENV
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: creatorbonds-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: creatorbonds-config
+              key: REDIS_URL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+# kubernetes/backend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: creatorbonds-backend-service
+  namespace: creatorbonds
+spec:
+  selector:
+    app: creatorbonds-backend
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
+  type: ClusterIP
+
+---
+# kubernetes/frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: creatorbonds-frontend
+  namespace: creatorbonds
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: creatorbonds-frontend
+  template:
+    metadata:
+      labels:
+        app: creatorbonds-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: creatorbonds/frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: REACT_APP_API_URL
+          value: "https://api.yourdomain.com"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+---
+# kubernetes/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: creatorbonds-ingress
+  namespace: creatorbonds
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - yourdomain.com
+    - api.yourdomain.com
+    secretName: creatorbonds-tls
+  rules:
+  - host: yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: creatorbonds-frontend-service
+            port:
+              number: 3000
+  - host: api.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: creatorbonds-backend-service
+            port:
+              number: 3001
+
+---
+# terraform/main.tf - Infrastructure as Code
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+# VPC and Networking
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "creatorbonds-vpc"
+  }
+}
+
+resource "aws_subnet" "public" {
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.${count.index + 1}.0/24"
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+  
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "creatorbonds-public-${count.index + 1}"
+  }
+}
+
+resource "aws_subnet" "private" {
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.${count.index + 10}.0/24"
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = {
+    Name = "creatorbonds-private-${count.index + 1}"
+  }
+}
+
+# ECS Cluster
+resource "aws_ecs_cluster" "main" {
+  name = "creatorbonds-cluster"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+}
+
+# Application Load Balancer
+resource "aws_lb" "main" {
+  name               = "creatorbonds-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = aws_subnet.public[*].id
+
+  enable_deletion_protection = false
+}
+
+# RDS Database
+resource "aws_db_instance" "main" {
+  identifier = "creatorbonds-db"
+  
+  engine         = "postgres"
+  engine_version = "15.4"
+  instance_class = "db.t3.medium"
+  
+  allocated_storage     = 100
+  max_allocated_storage = 1000
+  storage_type          = "gp3"
+  storage_encrypted     = true
+  
+  db_name  = "creatorbonds"
+  username = var.db_username
+  password = var.db_password
+  
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  
+  backup_retention_period = 7
+  backup_window          = "03:00-04:00"
+  maintenance_window     = "sun:04:00-sun:05:00"
+  
+  skip_final_snapshot = false
+  final_snapshot_identifier = "creatorbonds-final-snapshot"
+}
+
+# ElastiCache Redis
+resource "aws_elasticache_replication_group" "main" {
+  replication_group_id       = "creatorbonds-redis"
+  description                = "Redis cluster for CreatorBonds"
+  
+  node_type                  = "cache.t3.micro"
+  port                       = 6379
+  parameter_group_name       = "default.redis7"
+  
+  num_cache_clusters         = 2
+  automatic_failover_enabled = true
+  multi_az_enabled          = true
+  
+  subnet_group_name = aws_elasticache_subnet_group.main.name
+  security_group_ids = [aws_security_group.redis.id]
+  
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = true
+}
+
+# S3 Bucket for Static Assets
+resource "aws_s3_bucket" "assets" {
+  bucket = "creatorbonds-assets-${random_id.bucket_suffix.hex}"
+}
+
+resource "aws_s3_bucket_public_access_block" "assets" {
+  bucket = aws_s3_bucket.assets.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# CloudFront Distribution
+resource "aws_cloudfront_distribution" "main" {
+  origin {
+    domain_name = aws_s3_bucket.assets.bucket_regional_domain_name
+    origin_id   = "S3-${aws_s3_bucket.assets.bucket}"
+  }
+
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "S3-${aws_s3_bucket.assets.bucket}"
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+
+# Variables
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-west-2"
+}
+
+variable "db_username" {
+  description = "Database username"
+  type        = string
+  default     = "creatorbonds"
+}
+
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+}
+
+# Data sources
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
+# Outputs
+output "alb_dns_name" {
+  description = "DNS name of the load balancer"
+  value       = aws_lb.main.dns_name
+}
+
+output "rds_endpoint" {
+  description = "RDS instance endpoint"
+  value       = aws_db_instance.main.endpoint
+  sensitive   = true
+}
+
+output "redis_endpoint" {
+  description = "Redis cluster endpoint"
+  value       = aws_elasticache_replication_group.main.primary_endpoint_address
+  sensitive   = true
+}
+
+---
+# scripts/deploy.sh - Deployment Automation Script
+#!/bin/bash
+
+set -e
+
+# Configuration
+ENVIRONMENT=${1:-staging}
+VERSION=${2:-latest}
+REGION=${AWS_REGION:-us-west-2}
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() {
+    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+error() {
+    echo -e "${RED}❌ $1${NC}"
+    exit 1
+}
+
+# Validate environment
+if [[ ! "$ENVIRONMENT" =~ ^(staging|production)$ ]]; then
+    error "Environment must be 'staging' or 'production'"
+fi
+
+log "🚀 Starting deployment to $ENVIRONMENT environment"
+log "📦 Version: $VERSION"
+log "🌍 Region: $REGION"
+
+# Pre-deployment checks
+log "🔍 Running pre-deployment checks..."
+
+# Check AWS credentials
+if ! aws sts get-caller-identity > /dev/null 2>&1; then
+    error "AWS credentials not configured"
+fi
+success "AWS credentials validated"
+
+# Check Docker
+if ! docker --version > /dev/null 2>&1; then
+    error "Docker not installed or not running"
+fi
+success "Docker validated"
+
+# Check required environment variables
+REQUIRED_VARS=(
+    "DATABASE_URL"
+    "REDIS_URL"
+    "JWT_SECRET"
+    "VAPID_PUBLIC_KEY"
+    "VAPID_PRIVATE_KEY"
+)
+
+for var in "${REQUIRED_VARS[@]}"; do
+    if [[ -z "${!var}" ]]; then
+        error "Required environment variable $var is not set"
+    fi
+done
+success "Environment variables validated"
+
+# Run tests
+log "🧪 Running test suite..."
+if [[ "$ENVIRONMENT" == "production" ]]; then
+    npm run test:all || error "Tests failed"
+else
+    npm run test:smoke || error "Smoke tests failed"
+fi
+success "Tests passed"
+
+# Build and push Docker images
+log "🏗️  Building Docker images..."
+
+# Build backend
+docker build -t creatorbonds/backend:$VERSION -f Dockerfile.backend .
+docker tag creatorbonds/backend:$VERSION creatorbonds/backend:latest
+
+# Build frontend
+docker build -t creatorbonds/frontend:$VERSION \
+    --build-arg REACT_APP_API_URL="https://api-$ENVIRONMENT.yourdomain.com" \
+    --build-arg REACT_APP_WS_URL="wss://api-$ENVIRONMENT.yourdomain.com" \
+    -f Dockerfile.frontend .
+docker tag creatorbonds/frontend:$VERSION creatorbonds/frontend:latest
+
+success "Docker images built"
+
+# Push to registry
+log "📤 Pushing images to registry..."
+docker push creatorbonds/backend:$VERSION
+docker push creatorbonds/backend:latest
+docker push creatorbonds/frontend:$VERSION
+docker push creatorbonds/frontend:latest
+success "Images pushed to registry"
+
+# Deploy infrastructure with Terraform
+log "🏗️  Deploying infrastructure..."
+cd terraform
+
+terraform init
+terraform plan -var-file="environments/$ENVIRONMENT.tfvars" -out=plan.out
+terraform apply plan.out
+
+# Get infrastructure outputs
+ALB_DNS=$(terraform output -raw alb_dns_name)
+RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
+REDIS_ENDPOINT=$(terraform output -raw redis_endpoint)
+
+cd ..
+success "Infrastructure deployed"
+
+# Run database migrations
+log "🗃️  Running database migrations..."
+export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@$RDS_ENDPOINT/creatorbonds"
+npm run db:migrate
+success "Database migrations completed"
+
+# Deploy application
+case "$DEPLOYMENT_METHOD" in
+    "docker-compose")
+        log "🐳 Deploying with Docker Compose..."
+        export VERSION=$VERSION
+        docker-compose -f docker-compose.production.yml up -d
+        ;;
+    "kubernetes")
+        log "☸️  Deploying to Kubernetes..."
+        kubectl apply -f kubernetes/
+        kubectl set image deployment/creatorbonds-backend backend=creatorbonds/backend:$VERSION -n creatorbonds
+        kubectl set image deployment/creatorbonds-frontend frontend=creatorbonds/frontend:$VERSION -n creatorbonds
+        kubectl rollout status deployment/creatorbonds-backend -n creatorbonds
+        kubectl rollout status deployment/creatorbonds-frontend -n creatorbonds
+        ;;
+    "ecs")
+        log "🚀 Deploying to ECS..."
+        # Update ECS service with new task definition
+        aws ecs update-service \
+            --cluster creatorbonds-cluster \
+            --service creatorbonds-backend \
+            --force-new-deployment \
+            --region $REGION
+        ;;
+esac
+
+success "Application deployed"
+
+# Health checks
+log "🏥 Running health checks..."
+HEALTH_URL="https://api-$ENVIRONMENT.yourdomain.com/health"
+
+for i in {1..30}; do
+    if curl -f -s "$HEALTH_URL" > /dev/null; then
+        success "Health check passed"
+        break
+    fi
+    
+    if [[ $i -eq 30 ]]; then
+        error "Health check failed after 30 attempts"
+    fi
+    
+    log "Health check attempt $i/30 failed, retrying in 10 seconds..."
+    sleep 10
+done
+
+# Smoke tests
+log "💨 Running smoke tests..."
+npm run test:smoke:$ENVIRONMENT || error "Smoke tests failed"
+success "Smoke tests passed"
+
+# Update DNS (if needed)
+if [[ "$ENVIRONMENT" == "production" ]]; then
+    log "🌐 Updating DNS records..."
+    # Update Route53 or your DNS provider
+    aws route53 change-resource-record-sets \
+        --hosted-zone-id $HOSTED_ZONE_ID \
+        --change-batch file://dns-update.json
+    success "DNS updated"
+fi
+
+# Notification
+log "📢 Sending deployment notification..."
+curl -X POST "$SLACK_WEBHOOK_URL" \
+    -H 'Content-type: application/json' \
+    --data "{
+        \"text\": \"🚀 CreatorBonds $VERSION deployed to $ENVIRONMENT\",
+        \"blocks\": [
+            {
+                \"type\": \"section\",
+                \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \"*CreatorBonds Deployment Complete*\n\n*Environment:* $ENVIRONMENT\n*Version:* $VERSION\n*Status:* ✅ Success\n*URL:* https://$ENVIRONMENT.yourdomain.com\"
+                }
+            }
+        ]
+    }"
+
+success "Deployment notification sent"
+
+# Final summary
+log "🎉 Deployment completed successfully!"
+echo
+echo "📋 Deployment Summary:"
+echo "====================="
+echo "Environment: $ENVIRONMENT"
+echo "Version: $VERSION"
+echo "Frontend URL: https://$ENVIRONMENT.yourdomain.com"
+echo "API URL: https://api-$ENVIRONMENT.yourdomain.com"
+echo "Health Check: https://api-$ENVIRONMENT.yourdomain.com/health"
+echo
+echo "🔗 Quick Links:"
+echo "- Dashboard: https://$ENVIRONMENT.yourdomain.com/dashboard"
+echo "- Analytics: https://$ENVIRONMENT.yourdomain.com/analytics"
+echo "- API Docs: https://api-$ENVIRONMENT.yourdomain.com/docs"
+echo "- Monitoring: https://grafana-$ENVIRONMENT.yourdomain.com"
+echo
+success "🚀 CreatorBonds is now live!"
+
+---
+# .github/workflows/deploy.yml - CI/CD Pipeline
+name: Deploy CreatorBonds
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  release:
+    types: [published]
+
+env:
+  AWS_REGION: us-west-2
+  ECR_REPOSITORY_BACKEND: creatorbonds/backend
+  ECR_REPOSITORY_FRONTEND: creatorbonds/frontend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: creatorbonds_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run database migrations
+      run: npm run db:migrate
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/creatorbonds_test
+
+    - name: Run tests
+      run: npm run test:ci
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/creatorbonds_test
+        REDIS_URL: redis://localhost:6379
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.backend
+        push: true
+        tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.frontend
+        push: true
+        tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}
+        build-args: |
+          REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+          REACT_APP_WS_URL=${{ secrets.REACT_APP_WS_URL }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy to staging
+      run: |
+        ./scripts/deploy.sh staging ${{ github.sha }}
+      env:
+        DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        REDIS_URL: ${{ secrets.STAGING_REDIS_URL }}
+        JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+        VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+        VAPID_PRIVATE_KEY: ${{ secrets.STAGING_VAPID_PRIVATE_KEY }}
+
+    - name: Run staging smoke tests
+      run: npm run test:smoke:staging
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy to production
+      run: |
+        ./scripts/deploy.sh production ${{ github.sha }}
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        REDIS_URL: ${{ secrets.PRODUCTION_REDIS_URL }}
+        JWT_SECRET: ${{ secrets.PRODUCTION_JWT_SECRET }}
+        VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+        VAPID_PRIVATE_KEY: ${{ secrets.PRODUCTION_VAPID_PRIVATE_KEY }}
+
+    - name: Run production smoke tests
+      run: npm run test:smoke:production
+
+    - name: Notify team
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  security-scan:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ needs.build.outputs.image-tag }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
