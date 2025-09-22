@@ -1,0 +1,11 @@
+backend/
+server/
+contracts/
+Procfile
+server.js
+railway.json
+nixpacks.toml
+requirements.txt
+runtime.txt
+app.py
+*.py
