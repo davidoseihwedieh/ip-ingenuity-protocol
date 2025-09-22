@@ -1,0 +1,11 @@
+{
+  "name": "ip-ingenuity-protocol",
+  "version": "1.0.0",
+  "description": "AI-Powered IP Tokenization Platform",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Static site ready'",
+    "build": "echo 'Build complete'"
+  },
+  "dependencies": {}
+}
